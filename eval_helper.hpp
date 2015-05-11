@@ -43,3 +43,11 @@ Cell* eval_mult(Cell* args, Environment* env);
 Cell* eval_subt(Cell* args, Environment* env);
 
 Cell* eval_divi(Cell* args, Environment* env);
+
+Cell* eval_plus(Cell* args, Environment* env);
+
+Cell* eval_mult(Cell* args, Environment* env);
+
+Cell* eval_subt(Cell* args, Environment* env);
+
+Cell* eval_divi(Cell* args, Environment* env);

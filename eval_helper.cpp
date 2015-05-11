@@ -1,4 +1,5 @@
 #include "eval_helper.hpp"
+#include "arith.hpp"
 #include <cmath>
 #include <limits>
 #include <string>
@@ -344,4 +345,25 @@ Cell* eval_apply(Cell* args, Environment* env)
 	} else {
 		throw(runtime_error("bad syntax in apply"));
 	}
+}
+
+Cell* eval_plus(Cell* args, Environment* env)
+{
+	return eval_plus_mult<Add>(args, env);
+}
+
+Cell* eval_mult(Cell* args, Environment* env)
+{
+	return eval_plus_mult<Multiply>(args, env);
+}
+
+
+Cell* eval_subt(Cell* args, Environment* env)
+{
+  return eval_subt_divi<Subtraction>(args, env);
+}
+
+Cell* eval_divi(Cell* args, Environment* env)
+{
+  return eval_subt_divi<Division>(args, env);
 }

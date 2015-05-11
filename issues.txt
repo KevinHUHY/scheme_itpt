@@ -3,6 +3,5 @@
 3. local define
 4. inside eval_lambda: analysis body to identify free variables
 //5. function name and variable name cannot be the same, they are currently using the namespace
-5. variable name will shallow function name
-6. inline function for +, -, *, /
+6. variable name will shallow function name
 7. why cout << *op << doesn't work????

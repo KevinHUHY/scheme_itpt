@@ -7,7 +7,7 @@ CFLAGS   = -DOP_ASSIGN
 %.o: %.cpp
 	g++ -c $(CFLAGS) -fno-elide-constructors $<
 
-OBJS = main.o parse.o eval_helper.o eval.o arith.o Cell.o IntCell.o DoubleCell.o SymbolCell.o ConsCell.o ProcedureCell.o
+OBJS = main.o parse.o eval_helper.o eval.o Cell.o IntCell.o DoubleCell.o SymbolCell.o ConsCell.o ProcedureCell.o
 
 main: $(OBJS)
 	$(CC) -g -Wall $(CFLAGS) -o $@ $(OBJS) -lm
@@ -18,14 +18,12 @@ main.o: Cell.hpp cons.hpp parse.hpp eval.hpp main.cpp
 parse.o: Cell.hpp cons.hpp parse.hpp parse.cpp
 	$(CC) -c -g -Wall -std=c++11 parse.cpp
 
-eval_helper.o: Cell.hpp cons.hpp eval.hpp eval_helper.hpp eval_helper.cpp bstmap.hpp
+eval_helper.o: arith.hpp Cell.hpp cons.hpp eval.hpp eval_helper.hpp \
+							eval_helper.cpp bstmap.hpp
 	$(CC) -c -g -Wall -std=c++11 eval_helper.cpp
 
 eval.o: Cell.hpp cons.hpp eval.hpp eval.cpp bstmap.hpp
 	$(CC) -c -g -Wall -std=c++11 eval.cpp
-
-arith.o: eval_helper.hpp arith.hpp arith.cpp
-	$(CC) -c -g -Wall -std=c++11 arith.cpp
 
 Cell.o: Cell.hpp Cell.cpp
 	$(CC) -c -g -Wall -std=c++11 Cell.cpp
