@@ -6,6 +6,19 @@
 #include <string>
 #include <list>
 #include <map>
+#include <stdexcept>
+#include <fstream>
+#include <cassert>
+//
+// #include <cstddef>
+// #include <cstdlib>
+// #include <iostream>
+// #include <fstream>
+// #include <sstream>
+// #include <string>
+// #include <stack>
+// #include <exception>
+// #include <stdexcept>
 
 class Cell;
 
@@ -21,8 +34,6 @@ private:
   virtual Type get_type() const = 0;
 
 public:
-  // C++ does not allow for virtual constructors.
-  // A virtual destructor is necessary if derived class has a non-trivial destrcutor
   virtual ~Cell(){};
 
   bool is_int() const;
@@ -38,16 +49,14 @@ public:
   virtual Cell* get_cdr() const;
   virtual Cell* get_formals() const;
   virtual Cell* get_body() const;
+  virtual Environment& get_environment();
+  virtual std::string get_name() const;
+  virtual void set_name(std::string s);
 
-  virtual Cell* apply(Cell* const args, Environment* env);
-
+  virtual Cell* apply(Cell* args, Environment* env);
   virtual void print(std::ostream& os = std::cout) const = 0;
 
   friend std::string type2string(Cell::Type t);
-
-  //TODO: get rid of these two functions
-  bool is_number() const;
-  double get_number() const;
 };
 
 /*

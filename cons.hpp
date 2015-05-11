@@ -61,10 +61,12 @@ inline Cell* cons(Cell* const my_car, Cell* const my_cdr)
  * \param my_formals A list of the procedure's formal parameter names.
  * \param my_body The body (an expression) of the procedure.
  */
-inline Cell* lambda(Cell* const my_formals, Cell* const my_body)
-{
-  return new ProcedureCell(my_formals, my_body);
-}
+//
+// inline Cell* lambda(Cell* const my_formals, Cell* const my_body)
+// {
+//   return new ProcedureCell(my_formals, my_body);
+// }
+//
 
 /**
  * \brief Check if c points to an empty list, i.e., is a null pointer.

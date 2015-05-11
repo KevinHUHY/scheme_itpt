@@ -1,232 +1,193 @@
 #include "eval_helper.hpp"
 #include <cmath>
 #include <limits>
+#include <string>
+#include <set>
+#include <cassert>
+#include <iostream>
 
 using namespace std;
+
+inline bool is_list(Cell* c)
+{
+	return c == nil || c -> is_cons();
+}
 
 int list_length(Cell* c)
 {
 	int n = 0;
 	while(c != nil) {
 		c = c -> get_cdr();
-		n++;
+		++n;
 	}
 	return n;
 }
 
-void check_length(int needed, string op, Cell* c)
+void check_length(int expected, string op, Cell* c)
 {
 	int n = list_length(c);
-	if(n != needed) {
-		stringstream ss;
-		ss << "Wrong number of inputs for " << op << ". "
-			 << needed << " is needed, " << n << " is provided.";
-		throw(runtime_error(ss.str()));
-	}
-}
-
-Cell* eval_and_substitute(Cell* c)
-{
-	if(listp(c)){
-		c = eval(c);
-	}
-	if(c != nil && c -> is_symbol()) {
-		string s = c -> get_symbol();
-		if(s != "ceiling" && s != "floor" && s != "if" && s != "quote"
-				&& s != "cons" && s != "car" && s != "cdr" && s != "car"
-				&& s != "nullp" && s != "listp" && s != "+" && s != "-" && s != "*" && s != "/"
-				&& s != "define" && s != "<" && s != "not" && s != "eval"
-				&& s != "print" && s != "lambda" && s != "apply") {
-			c = retrive_symbol(c -> get_symbol());
-		}
-	}
-	return c;
-}
-
-//used by numerical function, < + - * /
-Cell* get_operand(Cell* operand) throw(runtime_error)
-{
-	if(nullp(operand)) {
-		string err_msg = "Non-numerical input";
+	if(n != expected) {
+		string err_msg = "wrong number of actual arguments\n\texpected:"
+										+ to_string(expected) + "\n\tgiven:" + to_string(n);
 		throw(runtime_error(err_msg));
 	}
-	operand = eval_and_substitute(operand);
-	if(nullp(operand) || !operand -> is_number()) {
-		string err_msg = "Non-numerical input";
-		throw(runtime_error(err_msg));
-	}
-	return operand;
 }
 
-//ceiling and floor return numerical cell, no symbol!
-Cell* deal_ceiling_floor(Cell* args, string op)
+Cell* eval_ceiling_floor(Cell* args, string f, Environment* env)
 {
-	//ceiling only accept one input.
-	check_length(1, op, args);
+	assert(f == "floor" || f == "ceiling");
+	check_length(1, f, args);
 
-	Cell* operand = args -> get_car();
-	operand = eval_and_substitute(operand);
-	double d = 0.0;
-	//ceiling only accept double as input
+	Cell* op = args -> get_car();
+	op = eval(op, env);
+	if (op == nil) {
+		throw(runtime_error("No input for " + f));
+	}
+
+	double d;
 	try{
-		if(operand == nil) {
-			throw(runtime_error("No input."));
-		}
-		d = get_double(operand);
+		d = op -> get_double();
 	} catch(runtime_error& e) {
-		string err_msg = op + " only accept double as operand.";
-		throw(runtime_error(err_msg));
+		throw(runtime_error(f + " only accept double as input"));
 	}
 
-	if(op == "ceiling") {
+	if(f == "ceiling") {
 		return new IntCell(ceil(d));
 	} else {
 		return new IntCell(floor(d));
 	}
 }
 
-//if returns a single cell, with symbol or number!
-Cell* deal_if(Cell* args)
+Cell* eval_ceiling(Cell* args, Environment* env)
 {
-	int n = list_length(args);
-	if(n != 2 && n != 3) {
-		stringstream ss;
-		ss << "Wrong number of inputs for if. 2 or 3 is needed, "
-			 << n << " is provided.";
-		throw(runtime_error(ss.str()));
-	}
+	return eval_ceiling_floor(args, "ceiling", env);
+}
 
-	Cell* predictor = args -> get_car();
-	predictor = eval_and_substitute(predictor);
+Cell* eval_floor(Cell* args, Environment* env)
+{
+	return eval_ceiling_floor(args, "floor", env);
+}
+
+// if-then-else, length must be 3
+Cell* eval_if(Cell* args, Environment* env)
+{
+	check_length(3, "if", args);
+
+	Cell* pred = args -> get_car();
+	pred = eval(pred, env);
+	bool bpred = true;
+	if (pred != nil && pred -> is_int() && pred -> get_int() == 0) {
+		bpred = false;
+	}
+	if (pred != nil && pred -> is_double() && pred -> get_double() == 0) {
+		bpred = false;
+	}
 
 	Cell* ret = nil;
-	if(predictor != nil && predictor -> is_number()
-			&& predictor -> get_number() == 0) {
-		//predictor is false, return the second cell
-		if(n == 2) {
-			return new IntCell(0);
-		} else {
-			ret = args -> get_cdr() -> get_cdr() -> get_car();
-		}
-	}	else {
+	if (bpred == true) {
 		ret = args -> get_cdr() -> get_car();
+	} else {
+		ret = args -> get_cdr() -> get_cdr() -> get_car();
 	}
-	// if(listp(ret)) {
-	// 	ret = eval(ret);
-	// }
-	ret = eval_and_substitute(ret);
-	return ret;
+	return eval(ret, env);
 }
 
 //quote never evals anything
-Cell* deal_quote(Cell* args)
+Cell* eval_quote(Cell* args)
 {
 	check_length(1, "quote", args);
 	return args -> get_car();
 }
 
 //cons constructs conscell, but never sustitute the symbol
-Cell* deal_cons(Cell* args)
+Cell* eval_cons(Cell* args, Environment* env)
 {
 	check_length(2, "cons", args);
-	Cell* operand1 = args -> get_car();
-	Cell* operand2 = args -> get_cdr() -> get_car();
-	if(!nullp(operand1)) {
-		operand1 = eval(operand1);
+	Cell* op1 = args -> get_car();
+	Cell* op2 = args -> get_cdr() -> get_car();
+	if(op1 != nil) {
+		op1 = eval(op1, env);
 	}
-	if(!nullp(operand2)) {
-		operand2 = eval(operand2);
+	if(op2 != nil) {
+		op2 = eval(op2, env);
 	}
-	return cons(operand1, operand2);
+	return new ConsCell(op1, op2);
 }
 
-//do substitution?
-Cell* deal_car(Cell* args)
+Cell* eval_car_cdr(Cell* args, string f, Environment* env)
 {
-	check_length(1, "car", args);
-	Cell* operand = args -> get_car();
-	operand = eval(operand);
-	if(operand == nil) {
-		throw(runtime_error("error in car."));
+	assert(f == "car" || f == "cdr");
+	check_length(1, f, args);
+	Cell* op = args -> get_car();
+	op = eval(op, env);
+	if(op == nil) {
+		throw(runtime_error("Try to get " + f + " from nil"));
 	}
-	return operand -> get_car();
+	if (f == "car") {
+		return op -> get_car();
+	} else {
+		return op -> get_cdr();
+	}
 }
 
-//do substitution
-Cell* deal_cdr(Cell* args)
+Cell* eval_car(Cell* args, Environment* env)
 {
-	check_length(1, "cdr", args);
-	Cell* operand = args -> get_car();
-	operand = eval(operand);
-	if(operand == nil) {
-		throw(runtime_error("error in cdr."));
-	}
-	return operand -> get_cdr();
+	return eval_car_cdr(args, "car", env);
 }
 
-//do substitution
-//i.e (define b (quote ())); (nullp b) = 1
-Cell* deal_nullp(Cell* args)
+Cell* eval_cdr(Cell* args, Environment* env)
+{
+	return eval_car_cdr(args, "cdr", env);
+}
+
+Cell* eval_nullp(Cell* args, Environment* env)
 {
 	check_length(1, "nullp", args);
-	Cell* operand = args -> get_car();
-	if(!nullp(operand)) {
-		operand = eval(operand);
+	Cell* op = args -> get_car();
+	op = eval(op, env);
+	if (op == nil) {
+		return new IntCell(1);
+	} else {
+		return new IntCell(0);
 	}
-	return new IntCell((int)nullp(operand));
 }
 
-Cell* deal_listp(Cell* args)
+Cell* eval_listp(Cell* args, Environment* env)
 {
 	check_length(1, "listp", args);
-	Cell* operand = args -> get_car();
-	if(!nullp(operand)) {
-		operand = eval(operand);
+	Cell* op = args -> get_car();
+	op = eval(op, env);
+	if (is_list(op)) {
+		return new IntCell(1);
+	} else {
+		return new IntCell(0);
 	}
-	return new IntCell((int)listp(operand));
 }
 
-//do evaluation before store the value
-Cell* deal_define(Cell* args) throw(runtime_error)
+Cell* eval_define(Cell* args, Environment* env)
 {
 	check_length(2, "define", args);
-	string symbol;
-	try {
-		symbol = args -> get_car() -> get_symbol();
-	} catch(runtime_error& e) {
-		string err_msg = "In define. ";
-		err_msg += e.what();
-		throw(runtime_error(err_msg));
+	Cell* key = args -> get_car();
+	// Cell* val = args -> get_cdr() -> get_car();
+	if (key == nil) {
+		throw(runtime_error("bad syntax in define"));
+		return nil;
 	}
-	Cell* value = args -> get_cdr() -> get_car();
-	// if do substitution
-	// if(value -> is_symbol()) {
-	// 	list< bstmap< string, Cell* > >::iterator it;
-	// 	for(it = sym_table_list.begin(); it != sym_table_list.end(); ++it) {
-	// 		ret = it -> find(s);
-	// 		if(ret != it -> end()) {
-	// 			break;
-	// 		}
-	// 	}
-	// 	if(it != sym_table_list.end()) {
-			// value = eval_and_substitute(value);
-	// 	}
-	// }
-	// if not
-	//if(listp(value)) {
-		value = eval(value);
-	//}
-	if(sym_table_list.empty()) {
-		//map< string, Cell* > cur_table; // anyway to simplify?
-		sym_table_list.push_front(bstmap< string, Cell* > ());
-		// sym_table_list.emplace_front();
-	}
-	pair< bstmap<string, Cell*>::iterator, bool > ret;
-	ret = sym_table_list.front().insert(pair<string, Cell*>(symbol, value));
-	if(ret.second == false) {
-		string err_msg = "Try to redefine ";
-		err_msg += symbol;
-		throw(runtime_error(err_msg));
+	if (key -> is_symbol()) {
+		string var_name = key -> get_symbol();
+		Cell* val = eval(args->get_cdr()->get_car(), env);
+		if (val -> is_procedure()) {
+			val -> set_name(var_name);
+		}
+		pair<string, Cell*> element(var_name, val);
+		if (env -> empty()
+				|| (*env).front().find(var_name) != (*env).front().end()) {
+			env -> push_front(SymbolTable());
+		}
+		(*env).front().insert(element);
+	} else {
+		throw(runtime_error("haven't been implemented yet (define)"));
+		// TODO: syntactic suger for (define (f arg) body);
 	}
 	return nil;
 }
@@ -234,285 +195,153 @@ Cell* deal_define(Cell* args) throw(runtime_error)
 // user should check whether the symbol can be retrieved
 Cell* retrieve_symbol(string s, const Environment* env)
 {
-	SymbolTable::iterator symtab_it;
-	Environment::iterator env_it;
-	for(env_it = env -> begin(); env_it != env -> end(); ++env_it) {
+	Environment::const_iterator env_it;
+	SymbolTable::const_iterator symtab_it;
+	for(env_it = env->begin(); env_it != env->end(); ++env_it) {
 		symtab_it = env_it -> find(s);
-		if (symtab_it != it -> end()) {
+		if (symtab_it != env_it -> end()) {
 			return symtab_it -> second;
 		}
 	}
 	return nil;
 }
 
-Cell* deal_lessthan(Cell* args) throw(runtime_error)
+Cell* eval_lessthan(Cell* args, Environment* env)
 {
-	bool ans = true;
-	Cell* operand = nil;
-	double old_value = -numeric_limits<double>::max();
-	double new_value = 0;
-	string old_symbol = "_INIT_";
+	int num_of_args = list_length(args);
+	if (num_of_args < 2) {
+		throw(runtime_error("< needs at leasts two inputs"));
+		return nil;
+	}
+
+	double prev_val = -numeric_limits<double>::max();
 	while(args != nil) {
-		operand = eval(args -> get_car());
-		if(operand -> is_number()) {
-			new_value = operand -> get_number();
-			ans = ans && (old_value < new_value);
-			old_value = new_value;
-		} else if(operand -> is_symbol()) {
-			if(old_symbol != "_INIT_") {
-				ans = ans && (old_symbol < operand -> get_symbol());
-			}
-			old_symbol = operand -> get_symbol();
-		} else {
-			throw(runtime_error("something bad happens in <"));
+		Cell* op = eval(args -> get_car(), env);
+		if (op == nil) {
+			throw(runtime_error("Bad syntax in <"));
+			return nil;
 		}
-		if(ans == false) {
-			break;
+		double curt_val;
+		if (op -> is_int()) {
+			curt_val = op -> get_int();
+		}	else {
+			curt_val = op -> get_double();
 		}
+		if (prev_val >= curt_val) {
+			return new IntCell(0);
+		}
+		prev_val = curt_val;
 		args = args -> get_cdr();
 	}
-	return new IntCell(ans);
+	return new IntCell(1);
 }
 
-//do substitution, otherwise symbol is a bug
-//but then (not +) is a bug
-Cell* deal_not(Cell* args) throw(runtime_error)
+Cell* eval_not(Cell* args, Environment* env)
 {
 	check_length(1, "not", args);
-	Cell* operand = eval_and_substitute(args -> get_car());
-	if(operand != nil && operand -> is_number() && operand -> get_number() == 0){
-		return new IntCell(1);
-	} else {
-		return new IntCell(0);
+	Cell* op = eval(args->get_car(), env);
+	if (op != nil && op -> is_int()) {
+		return new IntCell(op->get_int() == 0);
 	}
+	if (op != nil && op -> is_double()) {
+		return new IntCell(op->get_double() == 0);
+	}
+	return new IntCell(0);
 }
 
-Cell* deal_eval(Cell* args) throw(runtime_error)
+Cell* eval_eval(Cell* args, Environment* env)
 {
 	check_length(1, "eval", args);
-	Cell* operand = eval_and_substitute(args -> get_car());
-	if(operand != nil && operand -> is_cons()) {
-		operand = eval_and_substitute(operand);
-	}
-	return operand;
+	Cell* op = eval(args->get_car(), env);
+	return eval(op, env);
 }
 
-//in the sample program, no substitution is done.
-Cell* deal_print(Cell* args) throw(runtime_error)
+Cell* eval_print(Cell* args, Environment* env)
 {
 	check_length(1, "print", args);
-	Cell* operand = eval(args -> get_car());
-	if(operand == nil) {
+	Cell* op = eval(args->get_car(), env);
+	if(op == nil) {
 		cout << "()" << endl;
-	}
-	else {
-		cout << *operand << endl;
+	} else {
+		op -> print();
+		// cout << *op << endl;
 	}
 	return nil;
 }
 
-Cell* deal_lambda(Cell* args) throw(runtime_error)
+Cell* eval_lambda(Cell* const args, Environment* env)
 {
-	Cell* formal = args -> get_car();
-	Cell* body = args -> get_cdr();
-	if(body == nil) {
-		throw(runtime_error("No statement to build a procedure."));
+	Cell* formals_it = args -> get_car();
+	set<string> arg_names;
+	while (formals_it != nil) {
+		Cell* f = formals_it -> get_car();
+		if (f == nil || !(f -> is_symbol())) {
+			throw(runtime_error("lambda: formal arguments have to be identifier"));
+		}
+		string name = f -> get_symbol();
+		pair<set<string>::iterator, bool> insert_ret = arg_names.insert(name);
+		if (insert_ret.second == false) {
+			throw(runtime_error("lambda: duplicate argument name in " + name));
+		}
+		formals_it = formals_it -> get_cdr();
 	}
-	return new ProcedureCell(formal, body);
+
+	Cell* body = args -> get_cdr();
+	if (body == nil) {
+		throw(runtime_error("no statement to build a procedure."));
+	}
+	// TODO: analyze body to identify free variables
+	return new ProcedureCell(args->get_car(), body, env);
 }
 
-Cell* deal_procedure(Cell* const proc, Cell* const args) throw(runtime_error)
+Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 {
-	bstmap< string, Cell* > local_map;
-	Cell* formal_arg = proc -> get_formals();
-	Cell* actual_arg = args;
-	pair< bstmap<string, Cell*>::iterator, bool > ret;
-	if(list_length(formal_arg) != list_length(actual_arg)) {
-		cout << "# formal_arg: " << list_length(formal_arg) << endl;
-		cout << "# actual_arg: " << list_length(actual_arg) << endl;
-		throw(runtime_error("Wrong number of actual arguments."));
+	assert(proc != nil);
+	Cell* formals = proc -> get_formals();
+	Cell* actuals = args;
+	int len_formals = list_length(formals);
+	int len_actuals = list_length(actuals);
+	if (len_formals != len_actuals) {
+		string err_msg = "procedure-call: wrong number of actual arguments\n\texpected:"
+						+ to_string(len_formals) + "\n\tgiven:" + to_string(len_actuals);
+		throw(runtime_error(err_msg));
 	}
-	while(formal_arg != nil && actual_arg != nil) {
-		ret = local_map.insert(	pair< string, Cell* >
-														(formal_arg -> get_car() -> get_symbol(),
-														eval(actual_arg -> get_car()))
-													);	//!!! why eval instead of e_and_s???
-		if(ret.second == false) {
-			string err_msg = "Try to redefine ";
-			err_msg += formal_arg -> get_car() -> get_symbol();
-			throw(runtime_error(err_msg));
-		}
-		formal_arg = formal_arg -> get_cdr();
-		actual_arg = actual_arg -> get_cdr();
+
+	SymbolTable local_map;
+	while (formals != nil) {
+		// don't need to check duplication, checked while constructing procedure
+		local_map.insert(pair<string, Cell*>(formals->get_car()->get_symbol(),
+																				 eval(actuals->get_car(), env)));
+		formals = formals -> get_cdr();
+		actuals = actuals -> get_cdr();
 	}
-	sym_table_list.push_front(local_map);
+	string proc_name = proc -> get_name();
+	if (proc_name != "" && local_map.find(proc_name) == local_map.end()) {
+		// cout << proc_name << endl;
+		local_map.insert(pair<string, Cell*>(proc_name, proc));
+	}
+
+	(proc->get_environment()).push_front(local_map);
 	Cell* ret_val = nil;
 	Cell* func_body = proc -> get_body();
-	while(func_body != nil) {
-		ret_val = eval(func_body -> get_car());
-		// ret_val = eval_and_substitute(func_body -> get_car());
+	assert(func_body != nil);
+	while (func_body != nil) {
+		ret_val = eval(func_body->get_car(), &(proc->get_environment()));
 		func_body = func_body -> get_cdr();
 	}
-	sym_table_list.pop_front();
+	(proc->get_environment()).pop_front();
 	return ret_val;
 }
 
-Cell* deal_apply(Cell* args) throw(runtime_error)
+Cell* eval_apply(Cell* args, Environment* env)
 {
 	check_length(2, "apply", args);
-	Cell* proc_cell = args -> get_car();
-	proc_cell = eval(proc_cell);
-	Cell* args_for_proc = args -> get_cdr() -> get_car();
-	if(listp(args_for_proc)) {
-		args_for_proc = eval(args_for_proc);
-	}
-	return proc_cell -> apply(args_for_proc);
-}
+	Cell* function = eval(args->get_car(), env);
+	Cell* arg_list = eval(args->get_cdr()->get_car(), env);
 
-Cell* deal_plus(Cell* args)
-{
-	double result = 0;
-	bool is_double = false;
-	Cell* operand = nil;
-	while(args != nil) {
-		try {
-			operand = get_operand(args -> get_car());
-		} catch(runtime_error& e) {
-			string err_msg(e.what());
-			err_msg += " for +";
-			throw(runtime_error(err_msg));
-		}
-		result += operand -> get_number();
-		is_double += operand -> is_double();
-		args = args -> get_cdr();
-	}
-	if(is_double) {
-		return new DoubleCell(result);
-	}
-	else {
-		return new IntCell(result);
-	}
-}
-
-Cell* deal_mult(Cell* args)
-{
-	double result = 1;
-	bool is_double = false;
-	Cell* operand = nil;
-	while(args != nil) {
-		try {
-			operand = get_operand(args -> get_car());
-		} catch (runtime_error& e) {
-			string err_msg(e.what());
-			err_msg += " for *";
-			throw(runtime_error(err_msg));
-		}
-		result *= operand -> get_number();
-		is_double += operand -> is_double();
-		args = args -> get_cdr();
-	}
-	if(is_double) {
-		return new DoubleCell(result);
-	}
-	else {
-		return new IntCell(result);
-	}
-}
-
-Cell* deal_subt(Cell* args)
-{
-	if(list_length(args) == 0) {
-		string err_msg = "Empty input for -";
-		throw(runtime_error(err_msg));
-	}
-	//get the first operand
-	Cell* operand = nil;
-	try {
-		operand = get_operand(args -> get_car());
-	} catch (runtime_error& e) {
-		string err_msg(e.what());
-		err_msg += "for -";
-		throw(runtime_error(err_msg));
-	}
-	//if there is only one operand, return the inverse
-	if(list_length(args) == 1) {
-		double number = 0 - operand -> get_number();
-		if(operand -> is_double()) {
-			return new DoubleCell(number);
-		} else {
-			return new IntCell(number);
-		}
-	}
-	//else, the first the operand is the minuend
-	double result = operand -> get_number();
-	bool is_double = operand -> is_double();
-	while((args = args -> get_cdr()) != nil) {
-		try {
-			operand = get_operand(args -> get_car());
-		} catch(runtime_error& e) {
-			string err_msg(e.what());
-			err_msg += " for -";
-			throw(runtime_error(err_msg));
-		}
-		result -= operand -> get_number();
-		is_double += operand -> is_double();
-	}
-	if(is_double) {
-		return new DoubleCell(result);
-	}
-	else {
-		return new IntCell(result);
-	}
-}
-
-Cell* deal_divi(Cell* args)
-{
-	if(list_length(args) == 0) {
-		string err_msg = "Empty input for /";
-		throw(runtime_error(err_msg));
-	}
-	//get the first operand
-	Cell* operand = nil;
-	try {
-		operand = get_operand(args -> get_car());
-	} catch (runtime_error& e) {
-		string err_msg(e.what());
-		err_msg += "for *";
-		throw(runtime_error(err_msg));
-	}
-	//if there is only one operand, return the inverse
-	if(list_length(args) == 1) {
-		if(operand -> get_number() == 0) {
-			throw(runtime_error("Divisor cannot be 0"));
-		}
-		double number = 1.0 / operand -> get_number();
-		return make_double(number);
-	}
-	//else, the first the operand is the minuend
-	double result = operand -> get_number();
-	bool is_double = operand -> is_double();
-	while((args = args -> get_cdr()) != nil) {
-		try {
-			operand = get_operand(args -> get_car());
-		} catch(runtime_error& e) {
-			string err_msg(e.what());
-			err_msg += " for /";
-			throw(runtime_error(err_msg));
-		}
-		is_double += operand -> is_double();
-		if(operand -> get_number() == 0) {
-			throw(runtime_error("Divisor cannot be 0"));
-		}
-		if(is_double) {
-			result = result / operand -> get_number();
-		} else {
-			result = ((int)result)/((int) operand -> get_number());
-		}
-	}
-	if(is_double) {
-		return new DoubleCell(result);
-	}
-	else {
-		return new IntCell(result);
+	if(is_list(arg_list)) {
+		return function -> apply(arg_list, env);
+	} else {
+		throw(runtime_error("bad syntax in apply"));
 	}
 }

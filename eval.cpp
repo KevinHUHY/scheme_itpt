@@ -3,12 +3,9 @@
 
 using namespace std;
 
-// list < bstmap< string, Cell*> > sym_table_list;
-//map<string, Cell*> symbol_table;
-
 bool is_builtin_func(string s)
 {
-	return s == "ceiling" || s == "floor"  	|| s == "if")
+	return s == "ceiling" || s == "floor"  	|| s == "if"
 			|| s == "quote"		|| s == "cons"		|| s == "car"
 			|| s == "cdr" 		|| s == "car"			|| s == "nullp"
 			|| s == "listp" 	|| s == "+" 			|| s == "-"
@@ -18,30 +15,29 @@ bool is_builtin_func(string s)
 }
 
 // throw exception when ...
-Cell* eval(Cell* const c, Environment* globe_env)
+Cell* eval(Cell* c, Environment* global_env)
 {
-	if(c == nil) {
+	assert(global_env != 0);
+	if (c == nil) {
 		throw(runtime_error("Empty list cannot be evaluated."));
 	}
-	if(!listp(c)) {
-		if(symbolp(c)) {
-			string sym = c -> get_symbol();
-			Cell* val = retrieve_symbol(sym, global_env);
-			if (val == nil) {
-				if (is_builtin_func(sym)) {
-					return ProcedureCell(nil, nil);
-				} else {
-					throw(runtime_error("Undefined symbol"));
-				}
-			} else {
-				return val;
-			}
-		} else {
+	if (c -> is_cons()) {
+		Cell* func = eval(c->get_car(), global_env);
+		if (func == nil) {
+			throw(runtime_error("bad syntax, god knows what you are doing"));
+		}
+		return func -> apply(c->get_cdr(), global_env);
+	} else if (c -> is_symbol()) {
+		string sym = c -> get_symbol();
+		Cell* val = retrieve_symbol(sym, global_env);
+		if (val != nil) {
+			return val;
+		}
+		if (is_builtin_func(sym)) {
 			return c;
 		}
+		throw(runtime_error("undefined symbol: " + sym));
 	} else {
-		Cell* func = eval(c -> get_car(), global_env);
-		return func -> apply(c -> get_cdr(), global_env);
+		return c;
 	}
-
 }

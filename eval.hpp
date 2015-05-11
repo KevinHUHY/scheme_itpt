@@ -1,7 +1,6 @@
 #ifndef __EVAL__
 #define __EVAL__
-
-#include <stdexcept>
+#include "Cell.hpp"
 
 /**
  * \brief Evaluate the expression tree whose root is pointed to by c
@@ -9,6 +8,6 @@
  *
  * \return a pointer to a dynamic Cell storing the result.
  */
-Cell* eval(Cell* const c, Environment* globe_env);
+Cell* eval(Cell* c, Environment* globe_env);
 
 #endif /* defined(__EVAL__) */

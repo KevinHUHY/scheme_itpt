@@ -9,7 +9,7 @@ public:
   virtual ~SymbolCell();
 
   virtual std::string get_symbol() const;
-  virtual Cell* apply(Cell* const args, Environment* env);
+  virtual Cell* apply(Cell* args, Environment* env);
 
   virtual void print(std::ostream& os = std::cout) const;
 

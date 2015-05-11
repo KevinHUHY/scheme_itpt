@@ -10,7 +10,10 @@ public:
 
   virtual Cell* get_formals() const;
   virtual Cell* get_body() const;
-  virtual Cell* apply(Cell* const args);
+  virtual Environment& get_environment();
+  virtual std::string get_name() const;
+  virtual void set_name(std::string s);
+  virtual Cell* apply(Cell* args, Environment* env);
 
   virtual void print(std::ostream& os = std::cout) const;
 
@@ -18,6 +21,7 @@ private:
   Type get_type() const;
   Cell* formals_m;
   Cell* body_m;
+  std::string name;
   Environment env;
 };
 

@@ -40,16 +40,16 @@
 			(element-append (reverse (cdr list)) (car list)))))
 
 (define ph
-	(lambda (proc2 l l1 l2)
+	(lambda (proc l l1 l2)
 		(if (nullp l)
 			(cons l1 (cons l2 ()))
-			(if (proc2 (car l))
-				(ph proc2 (cdr l) (element-append l1 (car l)) l2)
-				(ph proc2 (cdr l) l1 (element-append l2 (car l)))))))
+			(if (proc (car l))
+				(ph proc (cdr l) (element-append l1 (car l)) l2)
+				(ph proc (cdr l) l1 (element-append l2 (car l)))))))
 
 (define list-partition
-	(lambda (proc0 list)
-		(ph proc0 list (quote ()) (quote ()))))
+	(lambda (proc list)
+		(ph proc list (quote ()) (quote ()))))
 
 (define list-sort
 	(lambda (proc list)

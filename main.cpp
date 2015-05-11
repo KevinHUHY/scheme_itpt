@@ -11,8 +11,10 @@
 #include "parse.hpp"
 #include "eval.hpp"
 #include <sstream>
-
+#include <fstream>
 using namespace std;
+
+Environment env;
 
 /**
  * \brief Parse and evaluate the s-expression, and print the result.
@@ -23,7 +25,7 @@ void parse_eval_print(string sexpr, bool with_print = true)
 {
   try {
     Cell* root = parse(sexpr);
-    Cell* result = eval(root);
+    Cell* result = eval(root, &env);
     if (with_print) {
       if ( result == nil ) {
 	     cout << "()" << endl;

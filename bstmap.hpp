@@ -4,11 +4,11 @@ template <class Key, class T>
 class bstmap
 {
 public:
-  typedef Key                key_type;
-  typedef T                  data_type;
+  typedef Key                     key_type;
+  typedef T                       data_type;
   typedef std::pair<const Key, T> value_type;
-  typedef unsigned int       size_type;
-  typedef int                difference_type;
+  typedef unsigned int            size_type;
+  typedef int                     difference_type;
 
 private:
   typedef bstmap<Key, T> Self;
@@ -37,7 +37,7 @@ public:
     Node* pNode_m;
   public:
     iterator(){};
-    
+
     iterator(Node* p)
     :pNode_m(p)
     {};
@@ -80,7 +80,7 @@ public:
       }
       return *this;
     }
-    
+
     iterator operator++(int)
     {
       iterator temp(pNode_m);
@@ -105,7 +105,7 @@ public:
   // public:
   private:
     const Node* pNode_m;
-  public:    
+  public:
     const_iterator(Node* p)
     :pNode_m(p)
     {};
@@ -147,7 +147,7 @@ public:
       }
       return *this;
     }
-    
+
     const_iterator operator++(int)
     {
       const_iterator temp(pNode_m);
@@ -179,7 +179,7 @@ public:
     if(root == 0) {
       return 0;
     } else {
-      Node* ret = new Node(0, copy_tree(root -> left_m), 
+      Node* ret = new Node(0, copy_tree(root -> left_m),
                             copy_tree(root -> right_m), root ->val_m);
       if(ret -> left_m != 0) {
         ret -> left_m -> parent_m = ret;
@@ -191,7 +191,7 @@ public:
     }
   }
 
-  bstmap(const Self& x) 
+  bstmap(const Self& x)
   {
     size_m = x.size_m;
     root_m = copy_tree(x.root_m);
@@ -229,7 +229,7 @@ public:
     }
     return const_iterator(cur);
   }
-  
+
   iterator end()
   {
     return iterator(0);
@@ -354,7 +354,7 @@ public:
     delete_tree(root -> right_m);
     delete root;
   }
-  
+
   void clear()
   {
     delete_tree(root_m);

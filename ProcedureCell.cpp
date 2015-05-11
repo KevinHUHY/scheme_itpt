@@ -1,11 +1,14 @@
 #include "ProcedureCell.hpp"
 #include "eval_helper.hpp"
+using std::string;
 
 ProcedureCell::ProcedureCell(Cell* my_formals, Cell* my_body,
 														 const Environment* curt_env)
 :formals_m(my_formals), body_m(my_body)
 {
-	env = (*curt_env);
+	if (curt_env != 0) {
+		env = (*curt_env);
+	}
 }
 
 ProcedureCell::~ProcedureCell()
@@ -28,9 +31,24 @@ Cell* ProcedureCell::get_body() const
 	return body_m;
 }
 
-Cell* ProcedureCell::apply(Cell* args)
+Environment& ProcedureCell::get_environment()
 {
-	return deal_procedure(this, args);
+	return env;
+}
+
+std::string ProcedureCell::get_name() const
+{
+	return name;
+}
+
+void ProcedureCell::set_name(string s)
+{
+	name = s;
+}
+
+Cell* ProcedureCell::apply(Cell* args, Environment* env)
+{
+	return eval_procedure(this, args, env);
 }
 
 void ProcedureCell::print(std::ostream& os) const
