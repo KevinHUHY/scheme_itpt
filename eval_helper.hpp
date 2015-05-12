@@ -20,7 +20,7 @@ Cell* eval_listp(Cell* args, Environment* env);
 
 Cell* eval_define(Cell* args, Environment* env);
 
-Cell* retrieve_symbol(std::string s, const Environment* env);
+Cell* retrieve_symbol(Cell* c, const Environment* env);
 
 Cell* eval_lessthan(Cell* args, Environment* env);
 

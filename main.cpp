@@ -27,16 +27,16 @@ void parse_eval_print(string sexpr, bool with_print = true)
     Cell* root = parse(sexpr);
     Cell* result = eval(root, &env);
     if (with_print) {
-      if ( result == nil ) {
+      if (result == nil) {
 	     cout << "()" << endl;
       } else {
 	     cout << *result << endl;
       }
     }
   } catch (runtime_error &e) {
-    cerr << "ERROR: " << e.what() << endl;
+    cerr << "Error: " << e.what() << endl;
   } catch (logic_error &e) {
-    cerr << "LOGIC ERROR: " << e.what() << endl;
+    cerr << "LogicError: " << e.what() << endl;
     exit(1);
   }
 }

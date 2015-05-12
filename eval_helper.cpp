@@ -24,6 +24,17 @@ int list_length(Cell* c)
 	return n;
 }
 
+bool is_builtin_func(string s)
+{
+	return s == "ceiling" || s == "floor"  	|| s == "if"
+			|| s == "quote"		|| s == "cons"		|| s == "car"
+			|| s == "cdr" 		|| s == "car"			|| s == "nullp"
+			|| s == "listp" 	|| s == "+" 			|| s == "-"
+			|| s == "*"				|| s == "/" 			|| s == "define"
+			|| s == "<" 			|| s == "not" 		|| s == "eval"
+			|| s == "print" 	|| s == "lambda" 	|| s == "apply";
+}
+
 void check_length(int expected, string op, Cell* c)
 {
 	int n = list_length(c);
@@ -177,7 +188,7 @@ Cell* eval_define(Cell* args, Environment* env)
 	if (key -> is_symbol()) {
 		string var_name = key -> get_symbol();
 		Cell* val = eval(args->get_cdr()->get_car(), env);
-		if (val -> is_procedure()) {
+		if (val != nil && val -> is_procedure()) {
 			val -> set_name(var_name);
 		}
 		pair<string, Cell*> element(var_name, val);
@@ -193,18 +204,21 @@ Cell* eval_define(Cell* args, Environment* env)
 	return nil;
 }
 
-// user should check whether the symbol can be retrieved
-Cell* retrieve_symbol(string s, const Environment* env)
+Cell* retrieve_symbol(Cell* c, const Environment* env)
 {
+	assert(c != nil && c -> is_symbol());
+	string s = c -> get_symbol();
 	Environment::const_iterator env_it;
-	SymbolTable::const_iterator symtab_it;
 	for(env_it = env->begin(); env_it != env->end(); ++env_it) {
-		symtab_it = env_it -> find(s);
+		SymbolTable::const_iterator symtab_it = env_it -> find(s);
 		if (symtab_it != env_it -> end()) {
 			return symtab_it -> second;
 		}
 	}
-	return nil;
+	if (is_builtin_func(s)) {
+		return c;
+	}
+	throw(runtime_error("undefined symbol: " + s));
 }
 
 Cell* eval_lessthan(Cell* args, Environment* env)
@@ -265,7 +279,6 @@ Cell* eval_print(Cell* args, Environment* env)
 		cout << "()" << endl;
 	} else {
 		op -> print();
-		// cout << *op << endl;
 	}
 	return nil;
 }
@@ -295,6 +308,30 @@ Cell* eval_lambda(Cell* const args, Environment* env)
 	return new ProcedureCell(args->get_car(), body, env);
 }
 
+// void print_symbol_table(const SymbolTable& st)
+// {
+// 	for (SymbolTable::const_iterator it = st.begin(); it != st.end(); ++it) {
+// 		cout << it -> first << ": ";
+// 		if (it -> second == nil) {
+// 			cout << "nil";
+// 		} else {
+// 			it -> second -> print();
+// 		}
+// 		cout << endl;
+// 	}
+// }
+//
+// void print_env(const Environment& env)
+// {
+// 	cout << "from up to down, printing environemnt: " << endl;
+// 	for (Environment::const_iterator it = env.begin(); it != env.end(); ++it) {
+// 		cout << "---layer start---" << endl;
+// 		print_symbol_table(*it);
+// 		cout << "---layer end---" << endl;
+// 	}
+// 	cout << "***********" << endl;
+// }
+
 Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 {
 	assert(proc != nil);
@@ -307,18 +344,23 @@ Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 						+ to_string(len_formals) + "\n\tgiven:" + to_string(len_actuals);
 		throw(runtime_error(err_msg));
 	}
+	// print_env(*env);
 
 	SymbolTable local_map;
 	while (formals != nil) {
 		// don't need to check duplication, checked while constructing procedure
+		Cell* evaled_actual = eval(actuals->get_car(), env);
 		local_map.insert(pair<string, Cell*>(formals->get_car()->get_symbol(),
-																				 eval(actuals->get_car(), env)));
+																				 evaled_actual));
 		formals = formals -> get_cdr();
 		actuals = actuals -> get_cdr();
 	}
+	// cout << "local_map: " << endl;
+	// print_symbol_table(local_map);
+	// cout << "-----" << endl;
+	//
 	string proc_name = proc -> get_name();
 	if (proc_name != "" && local_map.find(proc_name) == local_map.end()) {
-		// cout << proc_name << endl;
 		local_map.insert(pair<string, Cell*>(proc_name, proc));
 	}
 
