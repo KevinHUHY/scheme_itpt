@@ -18,7 +18,7 @@ typedef std::list<std::map<std::string, Cell*>> Environment;
 // Abtract data type Cell
 class Cell {
 protected:
-  enum Type {INT, DOUBLE, SYMBOL, CONS, PROCEDURE};
+  enum Type {INT, DOUBLE, BOOL, SYMBOL, CONS, PROCEDURE};
 
 private:
   virtual Type get_type() const = 0;
@@ -28,12 +28,14 @@ public:
 
   bool is_int() const;
   bool is_double() const;
+  bool is_bool() const;
   bool is_symbol() const;
   bool is_cons() const;
   bool is_procedure() const;
 
   virtual int get_int() const;
   virtual double get_double() const;
+  virtual bool get_bool() const;
   virtual std::string get_symbol() const;
   virtual Cell* get_car() const;
   virtual Cell* get_cdr() const;
@@ -57,6 +59,7 @@ extern Cell* const nil;
 
 #include "IntCell.hpp"
 #include "DoubleCell.hpp"
+#include "BoolCell.hpp"
 #include "ConsCell.hpp"
 #include "SymbolCell.hpp"
 #include "ProcedureCell.hpp"

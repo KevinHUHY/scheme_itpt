@@ -14,6 +14,8 @@ string type2string(Cell::Type t)
     return string("Symbol");
   } else if (t == Cell::CONS) {
     return string("Cons");
+  } else if (t == Cell::BOOL) {
+    return string("Bool");
   } else {
     return string("Procedure");
   }
@@ -27,6 +29,11 @@ bool Cell::is_int() const
 bool Cell::is_double() const
 {
   return get_type() == DOUBLE;
+}
+
+bool Cell::is_bool() const
+{
+  return get_type() == BOOL;
 }
 
 bool Cell::is_symbol() const
@@ -47,56 +54,63 @@ bool Cell::is_procedure() const
 int Cell::get_int() const
 {
   string err_msg = "Cannot get integer from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 double Cell::get_double() const
 {
   string err_msg = "Cannot get double from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
+  throw(runtime_error(err_msg));
+}
+
+bool Cell::get_bool() const
+{
+  string err_msg = "Cannot get bool from "
+    + type2string(get_type()) + " cell.";
   throw(runtime_error(err_msg));
 }
 
 string Cell::get_symbol() const
 {
   string err_msg = "Cannot get a symbol from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 Cell* Cell::get_car() const
 {
   string err_msg = "Cannot get car from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 Cell* Cell::get_cdr() const
 {
   string err_msg = "Cannot get cdr from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 Cell* Cell::get_formals() const
 {
   string err_msg = "Cannot get formal arg(s) from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 Cell* Cell::get_body() const
 {
   string err_msg = "Cannot get function body from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 
 Environment& Cell::get_environment()
 {
   string err_msg = "Cannot get environment from "
-                  + type2string(get_type()) + "cell.";
+    + type2string(get_type()) + "cell.";
   throw(runtime_error(err_msg));
 }
 

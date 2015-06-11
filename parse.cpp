@@ -29,7 +29,8 @@ bool is_legalnumeric(string str)
   int i;
   if ('.' == str[0]) {
     dotnum ++;
-  } else if ( !((str[0] >= '0') && (str[0] <= '9')) && ('+'!=str[0]) && ('-'!=str[0])) {
+  } else if ( !((str[0] >= '0') && (str[0] <= '9'))
+              && ('+'!=str[0]) && ('-'!=str[0])) {
     return false;
   }
   for (i = 1; i < length; i ++) {
@@ -39,7 +40,7 @@ bool is_legalnumeric(string str)
       return false;
     }
   }
-  if (dotnum>1) {
+  if (dotnum > 1) {
     return false;
   }
   return true;
@@ -84,7 +85,9 @@ void readsinglesymbol(string& substring, string& sexpr)
         break;
       }
       currentchar = substring[i];
-    } while ((!iswhitespace(currentchar)) && (currentchar != '(') && currentchar != '\"');
+    } while ((!iswhitespace(currentchar))
+             && (currentchar != '(')
+             && currentchar != '\"');
     --i;
   }
   substring = substring.substr(i+1, length - i - 1);
@@ -204,42 +207,35 @@ bool is_legalexpr(string sexpr)
   */
 Cell* makecell(string str)
 {
-  Cell* root;
   if (((str[0] >= '0') && (str[0] <= '9')) || (str[0] == '.')
   || ((('+'==str[0]) || ('-'==str[0]))&&(str.length()>1))) {
-    if (false == is_legalnumeric(str)) {
+    if (!is_legalnumeric(str)) {
       cout << "error: illegal numeric literal" << endl;
       exit(1);
     }
-    // this is a numeric literal
     if (string::npos == str.find('.')) {
-      // int number
       char* fchar = const_cast<char*>(str.c_str());
       int value = atoi(fchar);
-      root = make_int(value);
+      return make_int(value);
     } else {
-      // this is a double
       char* fchar = const_cast<char*>(str.c_str());
       double value = atof(fchar);
-      root = make_double(value);
+      return make_double(value);
     }
-  }
-
-  // we don't deal with literal strings right now, so they are commented out
-  // else if (str[0] == '\"') {
-  //     // this is a string literal
-  //     string strval = str.substr(1, str.size() - 2);
-  //     root = make_string(const_cast<char*>(strval.data()));
-  //   }
-  else {
-    // this is a symbol
+  } else if (str[0] == '#') {
+    if (str[2] == '\0' && (str[1] == 't' || str[1] == 'f')) {
+      return make_bool(str[1] == 't');
+    } else {
+      cout << "error: illegal bool literal" << endl;
+      exit(1);
+    }
+  } else {
     if (false == is_legaloperator(str)) {
       cout << "error: illegal operator" << endl;
       exit(1);
     }
-    root = make_symbol(const_cast<char*>(str.data()));
+    return make_symbol(const_cast<char*>(str.data()));
   }
-  return root;
 }
 
 Cell* separate_parse(string& sexpr);
@@ -300,7 +296,7 @@ Cell* separate_parse(string& instr)
 
   // check whether to read the end
   clearwhitespace(instr);
-  int length = instr.size();
+  //  int length = instr.size();
   // check whether it is a "()" sexpr
 
   while (instr.size() > 0) {

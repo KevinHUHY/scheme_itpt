@@ -1,11 +1,11 @@
 #include "IntCell.hpp"
 
 IntCell::IntCell(int i)
-:int_m(i)
+  : int_m(i)
 {}
 
 IntCell::IntCell(double d)
-:int_m(static_cast<int>(d))
+  :int_m(static_cast<int>(d))
 {}
 
 IntCell::~IntCell()

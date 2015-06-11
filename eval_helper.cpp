@@ -88,10 +88,7 @@ Cell* eval_if(Cell* args, Environment* env)
 	Cell* pred = args -> get_car();
 	pred = eval(pred, env);
 	bool bpred = true;
-	if (pred != nil && pred -> is_int() && pred -> get_int() == 0) {
-		bpred = false;
-	}
-	if (pred != nil && pred -> is_double() && pred -> get_double() == 0) {
+	if (pred != nil && pred -> is_bool() && pred -> get_bool() == false) {
 		bpred = false;
 	}
 
@@ -117,12 +114,8 @@ Cell* eval_cons(Cell* args, Environment* env)
 	check_length(2, "cons", args);
 	Cell* op1 = args -> get_car();
 	Cell* op2 = args -> get_cdr() -> get_car();
-	if(op1 != nil) {
-		op1 = eval(op1, env);
-	}
-	if(op2 != nil) {
-		op2 = eval(op2, env);
-	}
+  op1 = eval(op1, env);
+  op2 = eval(op2, env);
 	return new ConsCell(op1, op2);
 }
 
@@ -157,11 +150,7 @@ Cell* eval_nullp(Cell* args, Environment* env)
 	check_length(1, "nullp", args);
 	Cell* op = args -> get_car();
 	op = eval(op, env);
-	if (op == nil) {
-		return new IntCell(1);
-	} else {
-		return new IntCell(0);
-	}
+  return new BoolCell(op == nil);
 }
 
 Cell* eval_listp(Cell* args, Environment* env)
@@ -169,15 +158,12 @@ Cell* eval_listp(Cell* args, Environment* env)
 	check_length(1, "listp", args);
 	Cell* op = args -> get_car();
 	op = eval(op, env);
-	if (is_list(op)) {
-		return new IntCell(1);
-	} else {
-		return new IntCell(0);
-	}
+  return new BoolCell(is_list(op));
 }
 
 Cell* eval_define(Cell* args, Environment* env)
 {
+  //TODO: local define should not be allowed
 	check_length(2, "define", args);
 	Cell* key = args -> get_car();
 	// Cell* val = args -> get_cdr() -> get_car();
@@ -243,25 +229,23 @@ Cell* eval_lessthan(Cell* args, Environment* env)
 			curt_val = op -> get_double();
 		}
 		if (prev_val >= curt_val) {
-			return new IntCell(0);
+			return new BoolCell(false);
 		}
 		prev_val = curt_val;
 		args = args -> get_cdr();
 	}
-	return new IntCell(1);
+	return new BoolCell(true);
 }
 
 Cell* eval_not(Cell* args, Environment* env)
 {
 	check_length(1, "not", args);
 	Cell* op = eval(args->get_car(), env);
-	if (op != nil && op -> is_int()) {
-		return new IntCell(op->get_int() == 0);
-	}
-	if (op != nil && op -> is_double()) {
-		return new IntCell(op->get_double() == 0);
-	}
-	return new IntCell(0);
+  if (op != nil && op -> is_bool() && op -> get_bool() == false) {
+    return new BoolCell(true);
+  } else {
+    return new BoolCell(false);
+  }
 }
 
 Cell* eval_eval(Cell* args, Environment* env)
