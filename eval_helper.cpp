@@ -108,7 +108,20 @@ Cell* eval_quote(Cell* args)
 	return args -> get_car();
 }
 
+void set_list_level(Cell* list, int level)
+{
+  while (list != nil && list -> is_cons()) {
+    list -> set_level(level);
+    if (list -> get_car() != nil && list ->get_car() -> is_cons()) {
+      set_list_level(list->get_car(), level+1);
+    }
+    list = list -> get_cdr();
+  }
+}
+
 //cons constructs conscell, but never sustitute the symbol
+//should return correctly on the following input
+//(cons 1 (cons (cons 2 nil) nil))
 Cell* eval_cons(Cell* args, Environment* env)
 {
 	check_length(2, "cons", args);
@@ -116,7 +129,9 @@ Cell* eval_cons(Cell* args, Environment* env)
 	Cell* op2 = args -> get_cdr() -> get_car();
   op1 = eval(op1, env);
   op2 = eval(op2, env);
-	return new ConsCell(op1, op2);
+  Cell* ret = new ConsCell(op1, op2, 1);
+  set_list_level(ret, 1);
+  return ret;
 }
 
 Cell* eval_car_cdr(Cell* args, string f, Environment* env)
@@ -125,7 +140,7 @@ Cell* eval_car_cdr(Cell* args, string f, Environment* env)
 	check_length(1, f, args);
 	Cell* op = args -> get_car();
 	op = eval(op, env);
-	if(op == nil) {
+	if (op == nil) {
 		throw(runtime_error("Try to get " + f + " from nil"));
 	}
 	if (f == "car") {

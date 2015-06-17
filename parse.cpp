@@ -48,7 +48,6 @@ bool is_legalnumeric(string str)
 
 /**
   * \brief Check whether str is a legal operator
-  *
   */
 bool is_legaloperator(string str)
 {
@@ -148,24 +147,24 @@ bool is_legalexpr(string sexpr)
   if ('(' == sexpr[0]) {
     // it is expression
     int length = sexpr.length();
-    int inumleftparenthesis = 1;
+    int leftp = 1;
     int i;
     int quotationmark = 0;
-    for (i = 1; i < length; i ++ ) {
+    for (i = 1; i < length; i++) {
       if ('\"' == sexpr[i]) {
-        quotationmark ++;
+        quotationmark++;
         quotationmark = quotationmark%2;
       } else if ('(' == sexpr[i] && 0 == quotationmark) {
-        inumleftparenthesis ++;
+        leftp ++;
       } else if (')' == sexpr[i] && 0 == quotationmark) {
-        inumleftparenthesis --;
+        leftp--;
       }
-      if (0 == inumleftparenthesis) {
+      if (0 == leftp) {
         break;
       }
     }
     if ((i < length - 1) || (i == length)
-        || (inumleftparenthesis > 0) || 0 != quotationmark) {
+        || (leftp > 0) || 0 != quotationmark) {
       cout << "error: illegal s-expression " << endl;
       return false;
     }
@@ -238,30 +237,22 @@ Cell* makecell(string str)
   }
 }
 
-Cell* separate_parse(string& sexpr);
+Cell* separate_parse(string& sexpr, int level);
 
-Cell* parse(string sexpr)
+Cell* parse(string sexpr, int level)
 {
-  // is_legal(sexpr);
   // delete the whitesapce at the begining and end
   // such that the first and last character are not white space
   clearwhitespace(sexpr);
-  //   if (sexpr.length() == 0) {
-  //     return NULL;
-  //   }
   if (sexpr.length() == 0) {
     return NULL;
   }
-  if ( !is_legalexpr(sexpr)) {
+  if (!is_legalexpr(sexpr)) {
     return NULL;
   }
   // check whether is single symbol
-  // i.e. leaf cell
-  // if (string::npos == sexpr.find('(')) {
   if ('(' != sexpr[0]) {
-    // this is leaf cell
-    // bulid this leaf cell
-    Cell* root = makecell( sexpr );
+    Cell* root = makecell(sexpr);
     return root;
   }
 
@@ -269,16 +260,7 @@ Cell* parse(string sexpr)
   // delete the two characters
   int length = sexpr.size();
   sexpr = sexpr.substr(1, length-2);
-  clearwhitespace(sexpr);
-  length = sexpr.size();
-  //   if ( inparsecar ) {
-  //     if (sexpr == "") {
-  //       Cell* ec = new Cell("()");
-  //       return ec;
-  //     }
-  //   }
-  // separate the s-expression into two left and right subsexps
-  Cell* root = separate_parse(sexpr);
+  Cell* root = separate_parse(sexpr, level+1);
 
   return root;
 }
@@ -288,36 +270,34 @@ Cell* parse(string sexpr)
   * \param instr The string which consists of s-expressions.
   * \return A pointer to the conspair cell at the root of the parse tree.
   */
-Cell* separate_parse(string& instr)
+Cell* separate_parse(string& instr, int level)
 {
   string sexp;
   bool isstartsexp = false;
-  int inumleftparenthesis = 0;
+  int leftp = 0;
 
   // check whether to read the end
   clearwhitespace(instr);
-  //  int length = instr.size();
-  // check whether it is a "()" sexpr
 
   while (instr.size() > 0) {
     // read char by char
     char currentchar = instr[0];
     // skip some white space before new s-expression occurs
-    if ((true == iswhitespace(currentchar))&&(false == isstartsexp)) {
+    if (iswhitespace(currentchar) && !isstartsexp) {
       continue;
     }
-    // run accross a new s-expression
-    if ((false == isstartsexp)&&(false == iswhitespace(currentchar))) {
+    // run across a new s-expression
+    if (!isstartsexp && !iswhitespace(currentchar)) {
       // check whether single symbol
       if ('(' != currentchar) {
         // read single a single symbol
         readsinglesymbol(instr, sexp);
         clearwhitespace(instr);
         inparsecar = true;
-        Cell* car = parse(sexp);
+        Cell* car = parse(sexp, level+leftp);
         inparsecar = false;
-        Cell* cdr = parse("(" + instr + ")");
-        Cell* root = cons(car, cdr);
+        Cell* cdr = parse("(" + instr + ")", level+leftp-1);
+        Cell* root = cons(car, cdr, level+leftp);
         sexp.clear();
         return root;
       } else {
@@ -325,8 +305,8 @@ Cell* separate_parse(string& instr)
         isstartsexp = true;
         // read left parenthesiss
         sexp += currentchar;
-        instr = instr.substr(1, instr.size() -1);
-        inumleftparenthesis = 1;
+        instr = instr.substr(1, instr.size()-1);
+        leftp = 1;
       }
     } else {
       // in the process of reading the current s-expression
@@ -341,18 +321,18 @@ Cell* separate_parse(string& instr)
           instr = instr.substr(1, instr.size() -1);
           // count left parenthesiss
           if ('(' == currentchar) {
-            inumleftparenthesis ++;
+            leftp++;
           }
           if (')' == currentchar) {
-            inumleftparenthesis --;
+            leftp--;
 
             // check whether current s-expression ends
-            if (0 == inumleftparenthesis) {
+            if (0 == leftp) {
               // current s-expression ends
               isstartsexp = false;
               clearwhitespace(instr);
               inparsecar = true;
-              Cell* car = parse(sexp);
+              Cell* car = parse(sexp, level+leftp);
               inparsecar = false;
               int length = instr.length();
               Cell* cdr;
@@ -360,9 +340,9 @@ Cell* separate_parse(string& instr)
               if (length <= 0) {
                 cdr = NULL;
               } else {
-                cdr = parse("(" + instr + ")");
+                cdr = parse("(" + instr + ")", level+leftp-1);
               }
-              root = cons(car, cdr);
+              root = cons(car, cdr, level+leftp);
               sexp.clear();
               return root;
             }

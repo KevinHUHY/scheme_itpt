@@ -93,6 +93,20 @@ Cell* Cell::get_cdr() const
   throw(runtime_error(err_msg));
 }
 
+int Cell::get_level() const
+{
+  string err_msg = "Cannot get level from "
+    + type2string(get_type()) + "cell.";
+  throw(runtime_error(err_msg));
+}
+
+void Cell::set_level(int n)
+{
+  string err_msg = "Cannot set level for "
+    + type2string(get_type()) + "cell.";
+  throw(runtime_error(err_msg));
+}
+
 Cell* Cell::get_formals() const
 {
   string err_msg = "Cannot get formal arg(s) from "

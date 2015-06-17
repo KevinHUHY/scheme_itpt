@@ -39,11 +39,14 @@ public:
   virtual std::string get_symbol() const;
   virtual Cell* get_car() const;
   virtual Cell* get_cdr() const;
+  virtual int get_level() const;
   virtual Cell* get_formals() const;
   virtual Cell* get_body() const;
   virtual Environment& get_environment();
   virtual std::string get_name() const;
-  virtual void set_name(std::string s);
+
+  virtual void set_level(int n);
+  virtual void set_name(std::string name);
 
   virtual Cell* apply(Cell* args, Environment* env);
   virtual void print(std::ostream& os = std::cout) const = 0;

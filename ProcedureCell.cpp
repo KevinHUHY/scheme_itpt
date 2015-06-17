@@ -4,10 +4,10 @@ using std::string;
 
 ProcedureCell::ProcedureCell(Cell* my_formals, Cell* my_body,
 														 const Environment* curt_env)
-:formals_m(my_formals), body_m(my_body)
+  :formals_m(my_formals), body_m(my_body), name_m("")
 {
 	if (curt_env != 0) {
-		env = (*curt_env);
+		env_m = (*curt_env);
 	}
 }
 
@@ -33,17 +33,17 @@ Cell* ProcedureCell::get_body() const
 
 Environment& ProcedureCell::get_environment()
 {
-	return env;
+	return env_m;
 }
 
 std::string ProcedureCell::get_name() const
 {
-	return name;
+	return name_m;
 }
 
-void ProcedureCell::set_name(string s)
+void ProcedureCell::set_name(string name)
 {
-	name = s;
+	name_m = name;
 }
 
 Cell* ProcedureCell::apply(Cell* args, Environment* env)

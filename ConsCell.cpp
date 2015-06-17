@@ -1,7 +1,7 @@
 #include "ConsCell.hpp"
 
-ConsCell::ConsCell(Cell* my_car, Cell* my_cdr)
-:car_m(my_car), cdr_m(my_cdr)
+ConsCell::ConsCell(Cell* my_car, Cell* my_cdr, int level)
+  :car_m(my_car), cdr_m(my_cdr), level_m(level)
 {}
 
 ConsCell::~ConsCell()
@@ -24,6 +24,16 @@ Cell* ConsCell::get_cdr() const
 	return cdr_m;
 }
 
+int ConsCell::get_level() const
+{
+  return level_m;
+}
+
+void ConsCell::set_level(int n)
+{
+  level_m = n;
+}  
+
 void ConsCell::print(std::ostream& os) const
 {
   os << "(";
@@ -32,6 +42,7 @@ void ConsCell::print(std::ostream& os) const
     if(current != this) {
       os << " ";
     }
+    os << "[" << level_m << "]";
     if(current -> get_car() != nil) {
       current -> get_car() -> print();
     }
@@ -41,6 +52,7 @@ void ConsCell::print(std::ostream& os) const
     current = current -> get_cdr();
     if(current != nil && !current -> is_cons()) {
       os << " .";
+      os << "[" << level_m << "]";
       current -> print();
       current = nil;
     }

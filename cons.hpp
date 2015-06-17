@@ -39,9 +39,9 @@ inline Cell* make_symbol(const char* s)
   return new SymbolCell(s);
 }
 
-inline Cell* cons(Cell* const my_car, Cell* const my_cdr)
+inline Cell* cons(Cell* const my_car, Cell* const my_cdr, int level)
 {
-  return new ConsCell(my_car, my_cdr);
+  return new ConsCell(my_car, my_cdr, level);
 }
 
 /**
