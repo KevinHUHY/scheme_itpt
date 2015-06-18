@@ -39,8 +39,8 @@ void check_length(int expected, string op, Cell* c)
 {
 	int n = list_length(c);
 	if(n != expected) {
-		string err_msg = "wrong number of actual arguments\n\texpected:"
-										+ to_string(expected) + "\n\tgiven:" + to_string(n);
+		string err_msg = op + ": wrong number of actual arguments\n\texpected:"
+      + to_string(expected) + "\n\tgiven:" + to_string(n);
 		throw(runtime_error(err_msg));
 	}
 }
@@ -178,30 +178,46 @@ Cell* eval_listp(Cell* args, Environment* env)
 
 Cell* eval_define(Cell* args, Environment* env)
 {
-  //TODO: local define should not be allowed
-	check_length(2, "define", args);
+  if (args == nil) {
+    throw(runtime_error("bad syntax in define, nothing to define"));
+  }
+  assert(args -> is_cons());
+  if (args -> get_level() != 1) {
+    throw(runtime_error("local define is not allowed"));
+  }
 	Cell* key = args -> get_car();
-	// Cell* val = args -> get_cdr() -> get_car();
 	if (key == nil) {
-		throw(runtime_error("bad syntax in define"));
+		throw(runtime_error("bad syntax in define, key is nil"));
 		return nil;
 	}
-	if (key -> is_symbol()) {
-		string var_name = key -> get_symbol();
-		Cell* val = eval(args->get_cdr()->get_car(), env);
-		if (val != nil && val -> is_procedure()) {
-			val -> set_name(var_name);
-		}
-		pair<string, Cell*> element(var_name, val);
-		if (env -> empty()
-				|| (*env).front().find(var_name) != (*env).front().end()) {
-			env -> push_front(SymbolTable());
-		}
-		(*env).front().insert(element);
-	} else {
-		throw(runtime_error("haven't been implemented yet (define)"));
-		// TODO: syntactic suger for (define (f arg) body);
+
+  string var_name;
+  Cell* val;
+  if (key -> is_symbol()) {
+    check_length(2, "define", args);
+		var_name = key -> get_symbol();
+		val = eval(args->get_cdr()->get_car(), env);
+	} else if (key -> is_cons()) {
+    if (key -> get_car() == nil || !(key -> get_car() -> is_symbol())) {
+      throw(runtime_error("bad syntax in define, invalid procedure name"));
+    }
+    var_name = key -> get_car() -> get_symbol();
+    Cell* lambda_cell = new ConsCell(key->get_cdr(), args->get_cdr(), 2);
+    set_list_level(lambda_cell, 2);
+    val = eval_lambda(lambda_cell, env);
+  } else {
+		throw(runtime_error("bad syntax in define"));
 	}
+
+  if (val != nil && val -> is_procedure()) {
+    val -> set_name(var_name);
+  }
+  pair<string, Cell*> element(var_name, val);
+  if (env -> empty() || (*env).front().find(var_name) != (*env).front().end()) {
+    env -> push_front(SymbolTable());
+  }
+  (*env).front().insert(element);
+
 	return nil;
 }
 

@@ -1,8 +1,8 @@
-1. local define should not be allowed, ohterwise, closure will be broken
-2. introduce BoolCell type, need to change parser
+(solved) 1. local define should not be allowed, ohterwise, closure will be broken
+(solved) 2. introduce BoolCell type, need to change parser
 3. add support for let expression
 4. inside eval_lambda: analysis body to identify free variables
-//5. function name and variable name cannot be the same, they are currently using the namespace
+??? 5. function name and variable name cannot be the same, they are currently using the namespace
 6. variable name will shallow function name
 (solved) 7. why cout << *op << doesn't work????
 8. redefine shouldn't be allowed

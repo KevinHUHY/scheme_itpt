@@ -23,9 +23,14 @@ Environment env;
  */
 void parse_eval_print(string sexpr, bool with_print = true)
 {
+  if (sexpr.size() == 0) {
+    return;
+  }
   try {
     Cell* root = parse(sexpr, 0);
-    cout << *root << endl;
+    if (root != nil) {
+      cout << *root << endl;
+    }
     Cell* result = eval(root, &env);
     if (with_print) {
       if (result == nil) {
