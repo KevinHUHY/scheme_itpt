@@ -12,7 +12,7 @@
 
 (define factorial (lambda (x) (if (< x 2) 1 (* x (factorial (- x 1))))))
 
-(define square (lambda (x) (print (* x x))))
+(define square (lambda (x) (* x x)))
 
 (define for-each
 	(lambda (f list)
@@ -22,11 +22,21 @@
            (f (car list))
            (for-each f (cdr list)))))))
 
+(define (map f ls)
+  (if (nullp ls)
+      (quote ())
+      (cons (f (car ls))
+            (map f (cdr ls)))))
+
+(define ls (quote (1 2 3 4 5)))
+
 (define list-tail
 	(lambda (list k)
-		(if k
-        (list-tail (cdr list) (- k 1))
-        list)))
+    (if (< k 0)
+        (print ("Error: k should >= 0"))
+        (if (= k 0)
+            list
+            (list-tail (cdr list) (- k 1))))))
 
 (define list-ref
 	(lambda (list k)
@@ -40,7 +50,7 @@
 
 (define element-append
 	(lambda (l e)
-		(list-append l (cons e ()))))
+		(list-append l (cons e (quote ())))))
 
 (define reverse
 	(lambda (list)
@@ -48,32 +58,29 @@
         (quote ())
         (element-append (reverse (cdr list)) (car list)))))
 
-(define ph
-	(lambda (proc l l1 l2)
-		(if (nullp l)
-        (cons l1 (cons l2 ()))
-        (if (proc (car l))
-            (ph proc (cdr l) (element-append l1 (car l)) l2)
-            (ph proc (cdr l) l1 (element-append l2 (car l)))))))
+(define (list-partition proc ls)
+  (let ((ph (lambda (ls ls1 ls2)
+             (if (nullp ls)
+                 (cons ls1 (cons ls2 (quote ())))
+                 (if (proc (car ls))
+                     (ph (cdr ls) (cons (car ls) ls1) ls2)
+                     (ph (cdr ls) ls1 (cons (car ls) ls2)))))))
+    (ph ls (quote ()) (quote ()))))
 
-(define list-partition
-	(lambda (proc list)
-		(ph proc list (quote ()) (quote ()))))
+(define (>5 x) (> x 5))
 
-(define list-sort
-	(lambda (proc list)
-		(if (nullp list)
-			(quote ())
-			((lambda ()
-         (define pivot (list-ref list 0))
-         (define ll (list-tail list 1))
-         (define proc_1 (lambda (x) (proc x pivot)))
-         (define lp (list-partition proc_1 ll))
-         (list-append
-					(element-append (list-sort proc (car lp)) pivot)
-					(list-sort proc (car (cdr lp)))))))))
+(define (hd ls)
+  (list-ref ls 0))
 
-(define >5 (lambda (x) (> x 5)))
+(define (tl ls)
+  (list-tail ls 1))
+
+(define (list-sort proc ls)
+  (if (nullp ls)
+      (quote ())
+      (let ((lp (list-partition (lambda (x) (proc x (hd ls))) (tl ls))))
+        (list-append (element-append (list-sort proc (car lp)) (hd ls))
+                     (list-sort proc (car (cdr lp)))))))
 
 (define equal?
 	(lambda (obj1 obj2)
@@ -81,16 +88,16 @@
 			(if (listp obj2)
           (if (nullp obj1)
               (if (nullp obj2)
-                  1
-						0)
+                  #t
+                  #f)
               (if (nullp obj2)
-                  0
+                  #f
                   (if (equal? (car obj1) (car obj2))
                       (equal? (cdr obj1) (cdr obj2))
-                      0)))
-				0)
+                      #f)))
+				#f)
 			(if (listp obj2)
-          0
+          #f
           (= obj1 obj2)))))
 
 (define q (quote ((a 1) (b 2) (c 3))))
@@ -98,7 +105,7 @@
 (define assoc
 	(lambda (obj alist)
 		(if (nullp alist)
-        0
+        #t
         (if (equal? obj (car (car alist)))
             (car alist)
             (assoc obj (cdr alist))))))

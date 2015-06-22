@@ -240,6 +240,22 @@ Cell* retrieve_symbol(Cell* c, const Environment* env)
 	throw(runtime_error("undefined symbol: " + s));
 }
 
+Cell* string_lessthan(string prev, Cell* args, Environment* env)
+{
+  while (args != nil) {
+    Cell* op = eval(args -> get_car(), env);
+    if (op == nil || !(op -> is_symbol())) {
+      throw(runtime_error("comparison between Symbol and other types"));
+    }
+    if (prev >= op -> get_symbol()) {
+      return new BoolCell(false);
+    }
+    prev = op -> get_symbol();
+    args = args -> get_cdr();
+  }
+  return new BoolCell(true);
+}
+    
 Cell* eval_lessthan(Cell* args, Environment* env)
 {
 	int num_of_args = list_length(args);
@@ -247,7 +263,11 @@ Cell* eval_lessthan(Cell* args, Environment* env)
 		throw(runtime_error("< needs at leasts two inputs"));
 		return nil;
 	}
-
+  Cell* first = eval(args -> get_car(), env);
+  if (first != nil && first -> is_symbol()) {
+    return string_lessthan(first->get_symbol(), args->get_cdr(), env);
+  }
+  
 	double prev_val = -numeric_limits<double>::max();
 	while(args != nil) {
 		Cell* op = eval(args -> get_car(), env);
@@ -258,9 +278,11 @@ Cell* eval_lessthan(Cell* args, Environment* env)
 		double curt_val;
 		if (op -> is_int()) {
 			curt_val = op -> get_int();
-		}	else {
+		}	else if (op -> is_double()) {
 			curt_val = op -> get_double();
-		}
+		} else {
+      throw(runtime_error("value is not comparable"));
+    }
 		if (prev_val >= curt_val) {
 			return new BoolCell(false);
 		}
@@ -296,6 +318,7 @@ Cell* eval_print(Cell* args, Environment* env)
 		cout << "()" << endl;
 	} else {
 		op -> print();
+    cout << endl;
 	}
 	return nil;
 }
@@ -455,9 +478,12 @@ Cell* eval_let(Cell* args, Environment* env)
     Cell* val = nil;
     try {
       val = eval(pair -> get_cdr() -> get_car(), env);
-    } catch (exception& e) {
+    } catch (runtime_error& e) {
       env -> pop_front();
       throw(e);
+    }
+    if (val != nil && val -> is_procedure()) {
+      val -> set_name(key);
     }
     SymbolTable::iterator it = (*env).front().find(key);
     if (it != (*env).front().end()) {
@@ -471,7 +497,7 @@ Cell* eval_let(Cell* args, Environment* env)
   while (body != nil) {
     try {
       ret = eval(body -> get_car(), env);
-    } catch (exception& e) {
+    } catch (runtime_error& e) {
       env -> pop_front();
       throw(e);
     }

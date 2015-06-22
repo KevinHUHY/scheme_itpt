@@ -42,7 +42,7 @@ void ConsCell::print(std::ostream& os) const
     if(current != this) {
       os << " ";
     }
-    os << "[" << level_m << "]";
+    //    os << "[" << level_m << "]";
     if(current -> get_car() != nil) {
       current -> get_car() -> print();
     }
@@ -52,7 +52,7 @@ void ConsCell::print(std::ostream& os) const
     current = current -> get_cdr();
     if(current != nil && !current -> is_cons()) {
       os << " .";
-      os << "[" << level_m << "]";
+      //os << "[" << level_m << "]";
       current -> print();
       current = nil;
     }

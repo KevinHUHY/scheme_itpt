@@ -1,6 +1,6 @@
 (solved) 1. local define should not be allowed, ohterwise, closure will be broken
 (solved) 2. introduce BoolCell type, need to change parser
-(solved) 3. add support for let expression, let expr acts the same as let* in racket
+(solved) 3. add support for let expr, let expr acts the same as letrec in racket
 4. inside eval_lambda: analysis body to identify free variables
 (solved) 4. function name and variable name are not allowed to  be the same, they are currently using the namespace
 (solved) 5. why cout << *op << doesn't work?
