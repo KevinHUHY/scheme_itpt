@@ -402,7 +402,7 @@ Cell* eval_apply(Cell* args, Environment* env)
 {
 	check_length(2, "apply", args);
 	Cell* function = eval(args->get_car(), env);
-	Cell* arg_list = eval(args->get_cdr()->get_car(), env);
+	Cell* arg_list = args->get_cdr()->get_car();
 
 	if(is_list(arg_list)) {
 		return function -> apply(arg_list, env);
