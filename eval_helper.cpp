@@ -32,7 +32,8 @@ bool is_builtin_func(string s)
 			|| s == "listp" 	|| s == "+" 			|| s == "-"
 			|| s == "*"				|| s == "/" 			|| s == "define"
 			|| s == "<" 			|| s == "not" 		|| s == "eval"
-			|| s == "print" 	|| s == "lambda" 	|| s == "apply";
+			|| s == "print" 	|| s == "lambda" 	|| s == "apply"
+    	|| s == "let";
 }
 
 void check_length(int expected, string op, Cell* c)
@@ -52,21 +53,14 @@ Cell* eval_ceiling_floor(Cell* args, string f, Environment* env)
 
 	Cell* op = args -> get_car();
 	op = eval(op, env);
-	if (op == nil) {
-		throw(runtime_error("No input for " + f));
-	}
-
-	double d;
-	try{
-		d = op -> get_double();
-	} catch(runtime_error& e) {
-		throw(runtime_error(f + " only accept double as input"));
+	if (op == nil || !(op -> is_double())) {
+		throw(runtime_error(f + ": improper input"));
 	}
 
 	if(f == "ceiling") {
-		return new IntCell(ceil(d));
+		return new IntCell(ceil(op->get_double()));
 	} else {
-		return new IntCell(floor(d));
+		return new IntCell(floor(op->get_double()));
 	}
 }
 
@@ -210,6 +204,14 @@ Cell* eval_define(Cell* args, Environment* env)
 	}
 
   if (val != nil && val -> is_procedure()) {
+    Cell* formals = val -> get_formals();
+    while (formals != nil) {
+      assert(formals -> get_car() != nil);
+      if (formals -> get_car() -> get_symbol() == var_name) {
+        throw(runtime_error("function name and formal argument name cannot be the same"));
+      }
+      formals = formals -> get_cdr();
+    }
     val -> set_name(var_name);
   }
   pair<string, Cell*> element(var_name, val);
@@ -300,6 +302,9 @@ Cell* eval_print(Cell* args, Environment* env)
 
 Cell* eval_lambda(Cell* const args, Environment* env)
 {
+  if (list_length(args) < 2) {
+    throw(runtime_error("lambda: bad syntax"));
+  }
 	Cell* formals_it = args -> get_car();
 	set<string> arg_names;
 	while (formals_it != nil) {
@@ -375,7 +380,9 @@ Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 	// cout << "-----" << endl;
 	//
 	string proc_name = proc -> get_name();
-	if (proc_name != "" && local_map.find(proc_name) == local_map.end()) {
+  // proc_name is guranteed to be different in eval_define
+  assert(local_map.find(proc_name) == local_map.end());
+	if (proc_name != ANONYMOUS_FUNC) {
 		local_map.insert(pair<string, Cell*>(proc_name, proc));
 	}
 
@@ -423,4 +430,53 @@ Cell* eval_subt(Cell* args, Environment* env)
 Cell* eval_divi(Cell* args, Environment* env)
 {
   return eval_subt_divi<Division>(args, env);
+}
+
+Cell* eval_let(Cell* args, Environment* env)
+{
+  if (list_length(args) < 2) {
+    throw(runtime_error("let: bad syntax"));
+  }
+  env -> push_front(SymbolTable());
+  Cell* id_vals = args -> get_car();
+  Cell* body = args -> get_cdr();
+  while (id_vals != nil) {
+    Cell* pair = id_vals -> get_car();
+    if (list_length(pair) != 2) {
+      env -> pop_front();
+      throw(runtime_error("let expression is ill-formed"));
+    }
+    Cell* id = pair -> get_car();
+    if (!(id -> is_symbol())) {
+      env -> pop_front();
+      throw(runtime_error("let: id must be symbol"));
+    }
+    string key = id -> get_symbol();
+    Cell* val = nil;
+    try {
+      val = eval(pair -> get_cdr() -> get_car(), env);
+    } catch (exception& e) {
+      env -> pop_front();
+      throw(e);
+    }
+    SymbolTable::iterator it = (*env).front().find(key);
+    if (it != (*env).front().end()) {
+      (*env).front().erase(it);
+    }
+    (*env).front().insert(std::pair<string, Cell*>(key, val));
+    id_vals = id_vals -> get_cdr();
+  }
+  assert(body != nil);
+  Cell* ret = nil;
+  while (body != nil) {
+    try {
+      ret = eval(body -> get_car(), env);
+    } catch (exception& e) {
+      env -> pop_front();
+      throw(e);
+    }
+    body = body -> get_cdr();
+  }
+  env -> pop_front();
+  return ret;
 }

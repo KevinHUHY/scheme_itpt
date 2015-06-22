@@ -1,17 +1,23 @@
 (solved) 1. local define should not be allowed, ohterwise, closure will be broken
 (solved) 2. introduce BoolCell type, need to change parser
-3. add support for let expression
+(solved) 3. add support for let expression, let expr acts the same as let* in racket
 4. inside eval_lambda: analysis body to identify free variables
-??? 5. function name and variable name cannot be the same, they are currently using the namespace
-6. variable name will shallow function name
-(solved) 7. why cout << *op << doesn't work????
-8. redefine shouldn't be allowed
-9. optimize the representation of environment, calc free variable
-10. write a short summary for dynamic scope, static scope, and closure
-11. add support to macro definition
-12. this should be allowed. i.e. 'a' doesn't have to be defined forward. same as the syntax in python, where forward declaration is not needed.
-    (define (f x) (+ a x))
-    (define a 2)
+(solved) 4. function name and variable name are not allowed to  be the same, they are currently using the namespace
+(solved) 5. why cout << *op << doesn't work?
+(solved) 6. redefine should be allowed in this implementation
+7. optimize the representation of environment, calc free variable
+8. add support to macro definition
+(solved) 9. this implementation use the same manner as that of SMLNJ to deal with variable re-binding
+    i.e. (define a 2) 
+         (define (f x) (+ a x))
+         (f 3) --> 5
+         (define a 4)
+         (f 3) --> 5
+    therefore, every variable used in closure should be defined forward
+    the following code (allowed in python)  should *not* be allowed here.
+        (define (f x) (+ a x))
+        (define a 2)
+        (f 2) -- > 4
     
 
 

@@ -58,6 +58,8 @@ Cell* SymbolCell::apply(Cell* const args, Environment* env)
     return eval_subt(args, env);
   } else if (op == "/") {
     return eval_divi(args, env);
+  } else if (op == "let") {
+    return eval_let(args, env);
   } else {
     throw(runtime_error("cannot apply " + op));
     return nil;

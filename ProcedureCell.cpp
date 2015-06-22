@@ -4,7 +4,7 @@ using std::string;
 
 ProcedureCell::ProcedureCell(Cell* my_formals, Cell* my_body,
 														 const Environment* curt_env)
-  :formals_m(my_formals), body_m(my_body), name_m("")
+  :formals_m(my_formals), body_m(my_body), name_m(ANONYMOUS_FUNC)
 {
 	if (curt_env != 0) {
 		env_m = (*curt_env);

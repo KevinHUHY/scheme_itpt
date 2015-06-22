@@ -2,6 +2,9 @@
 #define __ProcedureCell__
 
 #include "Cell.hpp"
+#include <string>
+
+const std::string ANONYMOUS_FUNC = "__ANONYMOUS__";
 
 class ProcedureCell : public Cell {
 public:
