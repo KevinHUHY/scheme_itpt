@@ -222,9 +222,13 @@ Cell* eval_define(Cell* args, Environment* env)
 
   string name;
   Cell* val = nil;
+
   if (key -> is_symbol()) {
     check_length(2, "define", args);
 		name = key -> get_symbol();
+    if (is_builtin_func(name)) {
+      throw(runtime_error("redefinition of built-in function is not allowed"));
+    }
     val = args -> get_cdr() -> get_car();
     if (define_lambda(val, env)) {
       val = eval_lambda(val->get_cdr(), env, name);
@@ -236,24 +240,14 @@ Cell* eval_define(Cell* args, Environment* env)
       throw(runtime_error("bad syntax in define, invalid procedure name"));
     }
     name = key -> get_car() -> get_symbol();
+    if (is_builtin_func(name)) {
+      throw(runtime_error("redefinition of built-in function is not allowed"));
+    }
     Cell* lambda_cell = new ConsCell(key->get_cdr(), args->get_cdr());
     val = eval_lambda(lambda_cell, env, name);
   } else {
 		throw(runtime_error("bad syntax in define, key is not a symbol"));
 	}
-
-  // if (val != nil && val -> is_procedure()) {
-  //   Cell* formals = val -> get_formals();
-  //   while (formals != nil) {
-  //     assert(formals -> get_car() != nil);
-  //     if (formals -> get_car() -> get_symbol() == name) {
-  //       throw(runtime_error("function name and formal argument name cannot be the same"));
-  //     }
-  //     formals = formals -> get_cdr();
-  //   }
-  //   val -> set_name(name);
-  //   // val -> set_closure(env)
-  // }
 
   assert(env->size() == 1); //there should be exactly one SymbolTable in global_env
   pair<string, Cell*> element(name, val);
@@ -266,8 +260,7 @@ Cell* eval_define(Cell* args, Environment* env)
 	return nil;
 }
 
-// Cell* retrieve_symbol(Cell* c, const Environment* env, bool* is_builtin = 0)
-Cell* retrieve_symbol(Cell* c, const Environment* env, bool* is_builtin)
+Cell* retrieve_symbol(Cell* c, const Environment* env)
 {
 	assert(c != nil && c -> is_symbol());
 	string s = c -> get_symbol();
@@ -275,16 +268,10 @@ Cell* retrieve_symbol(Cell* c, const Environment* env, bool* is_builtin)
 	for(env_it = env->begin(); env_it != env->end(); ++env_it) {
 		SymbolTable::const_iterator symtab_it = env_it -> find(s);
 		if (symtab_it != env_it -> end()) {
-      if (is_builtin != 0) {
-        *is_builtin = false;
-      }
 			return symtab_it -> second;
 		}
 	}
 	if (is_builtin_func(s)) {
-    if (is_builtin != 0) {
-      *is_builtin = true;
-    }
 		return c;
 	}
 	throw(runtime_error("undefined symbol: " + s));
@@ -386,7 +373,7 @@ void get_free_vars(const set<string>& defined_vars, const Cell* body, set<string
       get_free_vars(defined_vars, curt_cell, free_vars);
     } else if (curt_cell != nil && curt_cell -> is_symbol()) {
       string symbol = curt_cell -> get_symbol();
-      if (defined_vars.find(symbol) == defined_vars.end()) {
+      if (defined_vars.find(symbol) == defined_vars.end() && !is_builtin_func(symbol)) {
         free_vars -> insert(symbol);
       }
     } else {}
@@ -397,13 +384,19 @@ void get_free_vars(const set<string>& defined_vars, const Cell* body, set<string
 Environment build_closure(const set<string>& arg_names, const Cell* func_body, Environment* env)
 {
   set<string> symbols;
+  Environment ret;
+  SymbolTable symtab;
   // get_symbols(func_body, &symbols);
   get_free_vars(arg_names, func_body, &symbols);
   for (set<string>::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
-    cout << *it << ", ";
+    Cell* val = nil;
+    try {
+      val = retrieve_symbol(new SymbolCell(it->c_str()), env);
+      symtab.insert(pair<string, Cell*>(*it, val));
+    } catch (runtime_error& e) {}
   }
-  cout << endl;
-  return Environment();
+  ret.push_front(symtab);
+  return ret;
 }
 
 Cell* eval_lambda(Cell* const args, Environment* env, string proc_name)
@@ -434,34 +427,33 @@ Cell* eval_lambda(Cell* const args, Environment* env, string proc_name)
   assert(func_body != nil);
 
 	// TODO: analyze func_body to identify free variables
-  build_closure(arg_names, func_body, env);
-
-	return new ProcedureCell(args->get_car(), func_body, proc_name, env);
+  Environment closure_env = build_closure(arg_names, func_body, env);
+	return new ProcedureCell(args->get_car(), func_body, proc_name, &closure_env);
 }
 
-// void print_symbol_table(const SymbolTable& st)
-// {
-// 	for (SymbolTable::const_iterator it = st.begin(); it != st.end(); ++it) {
-// 		cout << it -> first << ": ";
-// 		if (it -> second == nil) {
-// 			cout << "nil";
-// 		} else {
-// 			it -> second -> print();
-// 		}
-// 		cout << endl;
-// 	}
-// }
-//
-// void print_env(const Environment& env)
-// {
-// 	cout << "from up to down, printing environemnt: " << endl;
-// 	for (Environment::const_iterator it = env.begin(); it != env.end(); ++it) {
-// 		cout << "---layer start---" << endl;
-// 		print_symbol_table(*it);
-// 		cout << "---layer end---" << endl;
-// 	}
-// 	cout << "***********" << endl;
-// }
+void print_symbol_table(const SymbolTable& st)
+{
+	for (SymbolTable::const_iterator it = st.begin(); it != st.end(); ++it) {
+		cout << it -> first << ": ";
+		if (it -> second == nil) {
+			cout << "nil";
+		} else {
+			it -> second -> print();
+		}
+		cout << endl;
+	}
+}
+
+void print_env(const Environment& env)
+{
+  cout << "***********" << endl;
+	for (Environment::const_iterator it = env.begin(); it != env.end(); ++it) {
+		cout << "---layer start---" << endl;
+		print_symbol_table(*it);
+		cout << "---layer end---" << endl;
+	}
+	cout << "***********" << endl;
+}
 
 Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 {
@@ -476,7 +468,10 @@ Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 						+ to_string(len_formals) + "\n\tgiven:" + to_string(len_actuals);
 		throw(runtime_error(err_msg));
 	}
+  // cout << "print evaluation environmet" << endl;
 	// print_env(*env);
+  // cout << "print closure" << endl;
+  // print_env(proc->get_environment());
 
 	SymbolTable local_map;
 	while (formals != nil) {
@@ -490,7 +485,7 @@ Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env)
 	// cout << "local_map: " << endl;
 	// print_symbol_table(local_map);
 	// cout << "-----" << endl;
-	//
+
 	string proc_name = proc -> get_name();
   // proc_name is guranteed to be different in eval_define
   assert(local_map.find(proc_name) == local_map.end());

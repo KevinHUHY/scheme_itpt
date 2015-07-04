@@ -3,12 +3,12 @@ broken
 (solved) 2. introduce BoolCell type, need to change parser
 (solved) 3. add support for let expr, let expr acts the same as letrec in
 racket
-4. inside eval_lambda: analysis body to identify free variables
+(solved) 4. inside eval_lambda: analysis body to identify free variables
 (solved) 4. function name and variable name are not allowed to  be the same,
 they are currently using the namespace
 (solved) 5. why cout << *op << doesn't work?
 (solved) 6. redefine should be allowed in this implementation
-7. optimize the representation of environment, calc free variable
+(solved)7. optimize the representation of environment, calc free variable
 8. add support to macro definition
 (solved) 9. this implementation use the same manner as that of SMLNJ to deal
 with variable re-binding
@@ -23,7 +23,7 @@ with variable re-binding
         (define a 2)
         (f 2) -- > 4
 
-phase2 development guide:
+phase 2 development guide:
 1. increase the efficiency of closure by identifying free variables
 2. redefinition of built in function is not allowed
 3. redefinition of a variable is allowed but will simply eliminate the old
