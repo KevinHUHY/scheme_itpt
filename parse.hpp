@@ -21,7 +21,7 @@ using namespace std;
  *
  * \return A pointer to the conspair cell at the root of the parse tree.
  */
-Cell* parse(string sexpr, int level);
+Cell* parse(string sexpr);
 
 /**
  * \brief Check whether the character is whitespace.

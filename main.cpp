@@ -14,24 +14,22 @@
 #include <fstream>
 using namespace std;
 
-Environment env;
-
 /**
  * \brief Parse and evaluate the s-expression, and print the result.
  * \param sexpr The string vaule holding the s-expression.
  * \param with_print Extra control over REP or RE.
  */
-void parse_eval_print(string sexpr, bool with_print = true)
+void parse_eval_print(string sexpr, Environment* env, bool with_print = true)
 {
   if (sexpr.size() == 0) {
     return;
   }
   try {
-    Cell* root = parse(sexpr, 0);
+    Cell* root = parse(sexpr);
     //    if (root != nil) {
     //cout << *root << endl;
     //}
-    Cell* result = eval(root, &env);
+    Cell* result = eval(root, env);
     if (with_print) {
       if (result == nil) {
 	     cout << "()" << endl;
@@ -45,16 +43,6 @@ void parse_eval_print(string sexpr, bool with_print = true)
     cerr << "LogicError: " << e.what() << endl;
     exit(1);
   }
-}
-
-/**
- * \brief Parse and evaluate s-expression, but not printing result.
- *        Specially for loading library.
- * \param sexpr The s-expression in string format
- */
-void parse_eval(string sexpr)
-{
-  parse_eval_print(sexpr, false);
 }
 
 /**
@@ -94,7 +82,7 @@ void readsinglesymbol(ifstream& fin, string& str)
  * \param fin The input file stream.
  * \param with_print Controls over doint REPL or REL. Useful for loading libraries.
  */
-void readfile(ifstream& fin, bool with_print = true)
+void readfile(ifstream& fin, Environment* env,  bool with_print = true)
 {
   string sexp;
   bool isstartsexp = false;
@@ -121,11 +109,7 @@ void readfile(ifstream& fin, bool with_print = true)
       	fin.putback(currentchar);
       	readsinglesymbol(fin, sexp);
       	// call function
-      	if (with_print) {
-      	  parse_eval_print(sexp);
-      	} else {
-      	  parse_eval(sexp);
-      	}
+        parse_eval_print(sexp, env, with_print);
       	sexp.clear();
       }	else {
       	// start new expression
@@ -148,41 +132,23 @@ void readfile(ifstream& fin, bool with_print = true)
           }
           if (')' == currentchar) {
             inumleftparenthesis --;
-          // check whether current s-expression ends
 	          if (0 == inumleftparenthesis) {
-             // current s-expression ends
     	        isstartsexp = false;
-    	      // call functions
-    	         if (with_print) {
-                 parse_eval_print(sexp);
-               } else {
-                 parse_eval(sexp);
-               }
-               sexp.clear();
-             }
-           }
-         }
-       }
-     }
-   }
-}
-
-/**
- * \brief Read the expressions from the file.
- * \param fn The file name.
- */
-void readfile(char* fn)
-{
-  ifstream fin(fn);
-  readfile(fin);
-  fin.close();
+              parse_eval_print(sexp, env, with_print);
+              sexp.clear();
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
  * \brief Read, parse, evaluate, and print the expression one by one from
  * the standard input, interactively.
  */
-void readconsole()
+void readconsole(Environment* env)
 {
   string sexpr;
   // read the input
@@ -195,7 +161,7 @@ void readconsole()
     if ("(exit)" == sexpr) {
       return;
     }
-    parse_eval_print(sexpr);
+    parse_eval_print(sexpr, env);
   } while (true);
 }
 
@@ -203,10 +169,10 @@ void readconsole()
  * \brief Load .scm library definitions, expecting no printing.
  * \param fn The .scm file name
  */
-void load_library(const char* fn)
+void load_library(const char* fn, Environment* env)
 {
   ifstream fin(fn);
-  readfile(fin, false);
+  readfile(fin, env, false);
   fin.close();
 }
 
@@ -215,23 +181,22 @@ void load_library(const char* fn)
  */
 int main(int argc, char* argv[])
 {
-  const char* lib_fname = "library.scm";
-
-  switch(argc) {
-  case 1:
-    // read from the standard input
-    load_library(lib_fname);
-    readconsole();
-    exit(0);
-    break;
-  case 2:
-    // read from a file
-    load_library(lib_fname);
-    readfile(argv[1]);
-    break;
-  default:
+  if (argc > 2) {
     cout << "too many arguments!" << endl;
-    exit(0);
   }
+
+  const char* lib_fname = "library.scm";
+  Environment global_env;
+  global_env.push_back(SymbolTable());
+  load_library(lib_fname, &global_env);
+
+  if (argc == 1) {
+    readconsole(&global_env);
+  } else {
+    ifstream fin(argv[1]);
+    readfile(fin, &global_env);
+    fin.close();
+  }
+
   return 0;
 }

@@ -237,9 +237,9 @@ Cell* makecell(string str)
   }
 }
 
-Cell* separate_parse(string& sexpr, int level);
+Cell* separate_parse(string& sexpr);
 
-Cell* parse(string sexpr, int level)
+Cell* parse(string sexpr)
 {
   // delete the whitesapce at the begining and end
   // such that the first and last character are not white space
@@ -260,7 +260,7 @@ Cell* parse(string sexpr, int level)
   // delete the two characters
   int length = sexpr.size();
   sexpr = sexpr.substr(1, length-2);
-  Cell* root = separate_parse(sexpr, level+1);
+  Cell* root = separate_parse(sexpr);
 
   return root;
 }
@@ -270,7 +270,7 @@ Cell* parse(string sexpr, int level)
   * \param instr The string which consists of s-expressions.
   * \return A pointer to the conspair cell at the root of the parse tree.
   */
-Cell* separate_parse(string& instr, int level)
+Cell* separate_parse(string& instr)
 {
   string sexp;
   bool isstartsexp = false;
@@ -294,10 +294,10 @@ Cell* separate_parse(string& instr, int level)
         readsinglesymbol(instr, sexp);
         clearwhitespace(instr);
         inparsecar = true;
-        Cell* car = parse(sexp, level+leftp);
+        Cell* car = parse(sexp);
         inparsecar = false;
-        Cell* cdr = parse("(" + instr + ")", level+leftp-1);
-        Cell* root = cons(car, cdr, level+leftp);
+        Cell* cdr = parse("(" + instr + ")");
+        Cell* root = cons(car, cdr);
         sexp.clear();
         return root;
       } else {
@@ -332,7 +332,7 @@ Cell* separate_parse(string& instr, int level)
               isstartsexp = false;
               clearwhitespace(instr);
               inparsecar = true;
-              Cell* car = parse(sexp, level+leftp);
+              Cell* car = parse(sexp);
               inparsecar = false;
               int length = instr.length();
               Cell* cdr;
@@ -340,9 +340,9 @@ Cell* separate_parse(string& instr, int level)
               if (length <= 0) {
                 cdr = NULL;
               } else {
-                cdr = parse("(" + instr + ")", level+leftp-1);
+                cdr = parse("(" + instr + ")");
               }
-              root = cons(car, cdr, level+leftp);
+              root = cons(car, cdr);
               sexp.clear();
               return root;
             }

@@ -5,15 +5,15 @@
 #include <iostream>
 #include <string>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include <stdexcept>
 #include <fstream>
 #include <cassert>
 
 class Cell;
 
-typedef std::map<std::string, Cell*> SymbolTable;
-typedef std::list<std::map<std::string, Cell*>> Environment;
+typedef std::unordered_map<std::string, Cell*> SymbolTable;
+typedef std::list<SymbolTable> Environment;
 
 // Abtract data type Cell
 class Cell {
@@ -39,15 +39,10 @@ public:
   virtual std::string get_symbol() const;
   virtual Cell* get_car() const;
   virtual Cell* get_cdr() const;
-  virtual int get_level() const;
   virtual Cell* get_formals() const;
   virtual Cell* get_body() const;
   virtual Environment& get_environment();
   virtual std::string get_name() const;
-
-  virtual void set_level(int n);
-  virtual void set_name(std::string name);
-
   virtual Cell* apply(Cell* args, Environment* env);
   virtual void print(std::ostream& os = std::cout) const = 0;
 

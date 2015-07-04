@@ -20,7 +20,7 @@ Cell* eval_listp(Cell* args, Environment* env);
 
 Cell* eval_define(Cell* args, Environment* env);
 
-Cell* retrieve_symbol(Cell* c, const Environment* env);
+Cell* retrieve_symbol(Cell* c, const Environment* env, bool* is_builtin=0);
 
 Cell* eval_lessthan(Cell* args, Environment* env);
 
@@ -30,7 +30,7 @@ Cell* eval_eval(Cell* args, Environment* env);
 
 Cell* eval_print(Cell* args, Environment* env);
 
-Cell* eval_lambda(Cell* const args, Environment* env);
+Cell* eval_lambda(Cell* const args, Environment* env, std::string proc_name=ANONYMOUS_FUNC);
 
 Cell* eval_procedure(Cell* const proc, Cell* const args, Environment* env);
 

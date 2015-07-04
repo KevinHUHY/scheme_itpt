@@ -2,9 +2,9 @@
 #include "eval_helper.hpp"
 using std::string;
 
-ProcedureCell::ProcedureCell(Cell* my_formals, Cell* my_body,
+ProcedureCell::ProcedureCell(Cell* my_formals, Cell* my_body, string name,
 														 const Environment* curt_env)
-  :formals_m(my_formals), body_m(my_body), name_m(ANONYMOUS_FUNC)
+  :formals_m(my_formals), body_m(my_body), name_m(name)
 {
 	if (curt_env != 0) {
 		env_m = (*curt_env);
@@ -39,11 +39,6 @@ Environment& ProcedureCell::get_environment()
 std::string ProcedureCell::get_name() const
 {
 	return name_m;
-}
-
-void ProcedureCell::set_name(string name)
-{
-	name_m = name;
 }
 
 Cell* ProcedureCell::apply(Cell* args, Environment* env)

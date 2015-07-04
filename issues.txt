@@ -1,14 +1,18 @@
-(solved) 1. local define should not be allowed, ohterwise, closure will be broken
+(solved) 1. local define should not be allowed, ohterwise, closure will be
+broken
 (solved) 2. introduce BoolCell type, need to change parser
-(solved) 3. add support for let expr, let expr acts the same as letrec in racket
+(solved) 3. add support for let expr, let expr acts the same as letrec in
+racket
 4. inside eval_lambda: analysis body to identify free variables
-(solved) 4. function name and variable name are not allowed to  be the same, they are currently using the namespace
+(solved) 4. function name and variable name are not allowed to  be the same,
+they are currently using the namespace
 (solved) 5. why cout << *op << doesn't work?
 (solved) 6. redefine should be allowed in this implementation
 7. optimize the representation of environment, calc free variable
 8. add support to macro definition
-(solved) 9. this implementation use the same manner as that of SMLNJ to deal with variable re-binding
-    i.e. (define a 2) 
+(solved) 9. this implementation use the same manner as that of SMLNJ to deal
+with variable re-binding
+    i.e. (define a 2)
          (define (f x) (+ a x))
          (f 3) --> 5
          (define a 4)
@@ -18,6 +22,13 @@
         (define (f x) (+ a x))
         (define a 2)
         (f 2) -- > 4
-    
 
-
+phase2 development guide:
+1. increase the efficiency of closure by identifying free variables
+2. redefinition of built in function is not allowed
+3. redefinition of a variable is allowed but will simply eliminate the old
+definition => global environment will be just one layer
+4. use a global level variable to replace "level" attribute of ConsCell
+   => use a class with a static member variable is better because there will
+   reduce the code needed to handle exception
+5.
